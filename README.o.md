@@ -27,6 +27,7 @@ find src -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) \
 ```bash {name=build menu=true}
 cmake --preset debug
 cmake --build --preset debug
+ctest --test-dir build/debug --output-on-failure
 ```
 
 ## Run

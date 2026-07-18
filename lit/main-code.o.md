@@ -15,6 +15,14 @@ else
 }
 
 print_mesh_stats(*mesh);
+
+const RicciTopologyPreflight topologyPreflight =
+    analyze_ricci_topology(*mesh);
+print_ricci_topology_preflight(topologyPreflight, std::cout);
+
+const RicciGeometryPreflight geometryPreflight =
+    analyze_ricci_geometry(*mesh, *geometry);
+print_ricci_geometry_preflight(geometryPreflight, std::cout);
 ```
 
 # Compute Cross Field

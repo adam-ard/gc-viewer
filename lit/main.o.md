@@ -2,6 +2,7 @@
 
 ```cpp {name=includes}
 "flatten.h"
+"mesh_preflight.h"
 
 "geometrycentral/surface/manifold_surface_mesh.h"
 "geometrycentral/surface/meshio.h"

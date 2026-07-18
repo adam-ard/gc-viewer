@@ -7,6 +7,7 @@ project(
   LANGUAGES CXX)
 
 find_package(Threads REQUIRED)
+include(CTest)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -61,7 +62,8 @@ set(RICCI_FLOW_BUILD_TESTS OFF)
 set(RICCI_FLOW_BUILD_CLI ON)
 add_subdirectory(ricci_flow)
 
-add_executable(gc_surface_viewer src/main.cpp src/flatten.cpp)
+add_executable(gc_surface_viewer src/main.cpp src/flatten.cpp
+                                 src/mesh_preflight.cpp)
 target_link_libraries(gc_surface_viewer PRIVATE ${GC_VIEWER_GEOMETRY_TARGET}
                                                 polyscope Threads::Threads)
 add_dependencies(gc_surface_viewer ricci_flow_cli)
@@ -69,8 +71,24 @@ target_compile_definitions(
   gc_surface_viewer
   PRIVATE RICCI_FLOW_CLI_PATH="$<TARGET_FILE:ricci_flow_cli>")
 
+if(BUILD_TESTING)
+  add_executable(mesh_preflight_test tests/mesh_preflight_test.cpp
+                                     src/mesh_preflight.cpp)
+  target_include_directories(mesh_preflight_test PRIVATE src)
+  target_link_libraries(mesh_preflight_test
+                        PRIVATE ${GC_VIEWER_GEOMETRY_TARGET})
+  add_test(NAME mesh_preflight COMMAND mesh_preflight_test)
+endif()
+
 if(MSVC)
   target_compile_options(gc_surface_viewer PRIVATE /W4)
+  if(BUILD_TESTING)
+    target_compile_options(mesh_preflight_test PRIVATE /W4)
+  endif()
 else()
   target_compile_options(gc_surface_viewer PRIVATE -Wall -Wextra -Wpedantic)
+  if(BUILD_TESTING)
+    target_compile_options(mesh_preflight_test
+                           PRIVATE -Wall -Wextra -Wpedantic)
+  endif()
 endif()

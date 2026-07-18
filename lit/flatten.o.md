@@ -27,6 +27,7 @@ std::function<void()> make_flatten_callback(
 
 ```cpp {name=flatten-includes}
 "flatten.h"
+"mesh_preflight.h"
 
 "geometrycentral/surface/meshio.h"
 "geometrycentral/surface/surface_mesh.h"
@@ -214,23 +215,17 @@ void place_flattened_mesh_beside_original(
 
 # Input Validation
 
-```cpp {name=flatten-definitions}
-void validate_ricci_input(gcs::SurfaceMesh& mesh)
-{
-    if (!mesh.hasBoundary())
-    {
-        throw std::runtime_error(
-            "Ricci boundary flattening requires an input mesh with a boundary");
-    }
+The topology preflight is shared with the viewer's load-time report. Repeating
+the inexpensive analysis when the button is pressed keeps the flattening
+boundary honest if later viewer tools are allowed to modify mesh connectivity.
 
-    for (gcs::Face face : mesh.faces())
-    {
-        if (face.degree() != 3)
-        {
-            throw std::runtime_error(
-                "Ricci boundary flattening currently requires triangular faces");
-        }
-    }
+```cpp {name=flatten-definitions}
+void validate_ricci_input(
+    gcs::SurfaceMesh& mesh,
+    gcs::VertexPositionGeometry& geometry)
+{
+    require_ricci_topology(analyze_ricci_topology(mesh));
+    require_ricci_geometry(analyze_ricci_geometry(mesh, geometry));
 }
 
 struct FlattenState
@@ -251,7 +246,7 @@ if (flatten_requested)
 {
     try
     {
-        validate_ricci_input(mesh);
+        validate_ricci_input(mesh, geometry);
 
         state->status = "Running Ricci flow...";
         state->job.start(make_validation_ricci_config(input_path));
