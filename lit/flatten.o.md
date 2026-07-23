@@ -417,7 +417,7 @@ void draw_cone_editor(FlattenState& state)
             state.candidate_colors_dirty = true;
         }
         ImGui::SameLine();
-        ImGui::SetNextItemWidth(70.0F);
+        ImGui::SetNextItemWidth(100.0F);
         int prescribed_index = candidate.prescribed_index;
         if (ImGui::InputInt("##index", &prescribed_index, 1, 4))
         {
