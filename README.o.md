@@ -36,9 +36,10 @@ ctest --test-dir build/debug --output-on-failure
 ./build/debug/gc_surface_viewer assets/stanford_bunny.off
 ```
 
-To validate the Ricci-flow bridge with the known-convergent four-cone target
-set, run the viewer with the included triangular bunny that has an open
-boundary:
+To exercise the frame-field-to-Ricci workflow, run the viewer with the included
+triangular bunny that has an open boundary. The viewer computes a
+boundary-aligned fourfold field, converts its nonzero indices to cone-curvature
+targets, and uses those targets when **Flatten** is pressed:
 
 ```bash {name=ricci-app menu=true}
 ./build/debug/gc_surface_viewer ricci_flow/data/stanford_bunny_with_hole.obj

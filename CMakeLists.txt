@@ -63,6 +63,7 @@ set(RICCI_FLOW_BUILD_CLI ON)
 add_subdirectory(ricci_flow)
 
 add_executable(gc_surface_viewer src/main.cpp src/flatten.cpp
+                                 src/cone_targets.cpp
                                  src/mesh_preflight.cpp)
 target_link_libraries(gc_surface_viewer PRIVATE ${GC_VIEWER_GEOMETRY_TARGET}
                                                 polyscope Threads::Threads)
@@ -78,17 +79,27 @@ if(BUILD_TESTING)
   target_link_libraries(mesh_preflight_test
                         PRIVATE ${GC_VIEWER_GEOMETRY_TARGET})
   add_test(NAME mesh_preflight COMMAND mesh_preflight_test)
+
+  add_executable(cone_targets_test tests/cone_targets_test.cpp
+                                   src/cone_targets.cpp)
+  target_include_directories(cone_targets_test PRIVATE src)
+  target_link_libraries(cone_targets_test
+                        PRIVATE ${GC_VIEWER_GEOMETRY_TARGET})
+  add_test(NAME cone_targets COMMAND cone_targets_test)
 endif()
 
 if(MSVC)
   target_compile_options(gc_surface_viewer PRIVATE /W4)
   if(BUILD_TESTING)
     target_compile_options(mesh_preflight_test PRIVATE /W4)
+    target_compile_options(cone_targets_test PRIVATE /W4)
   endif()
 else()
   target_compile_options(gc_surface_viewer PRIVATE -Wall -Wextra -Wpedantic)
   if(BUILD_TESTING)
     target_compile_options(mesh_preflight_test
+                           PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(cone_targets_test
                            PRIVATE -Wall -Wextra -Wpedantic)
   endif()
 endif()

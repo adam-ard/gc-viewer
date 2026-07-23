@@ -9,23 +9,27 @@ and UI state remain private to the implementation.
 ```cpp {name=flatten-header tangle=src/flatten.h}
 #pragma once
 
+#include "geometrycentral/surface/surface_mesh.h"
+
 #include <functional>
 #include <string>
 
 namespace geometrycentral::surface {
-class SurfaceMesh;
 class VertexPositionGeometry;
 }
 
 std::function<void()> make_flatten_callback(
     std::string input_path,
     geometrycentral::surface::SurfaceMesh& mesh,
-    geometrycentral::surface::VertexPositionGeometry& geometry);
+    geometrycentral::surface::VertexPositionGeometry& geometry,
+    geometrycentral::surface::VertexData<int>& frame_indices,
+    int field_symmetry);
 ```
 
 # Implementation Includes
 
 ```cpp {name=flatten-includes}
+"cone_targets.h"
 "flatten.h"
 "mesh_preflight.h"
 
@@ -41,14 +45,23 @@ std::function<void()> make_flatten_callback(
 <chrono>
 <cstdlib>
 <filesystem>
+<fstream>
 <future>
 <limits>
 <memory>
+<sstream>
 <stdexcept>
 <utility>
 ```
 
 # Ricci Command
+
+The command-line bridge uses an OBJ written from Geometry Central's in-memory
+mesh rather than reopening the user's original file. This normalization makes
+the target IDs reliable: Geometry Central may strip unused input vertices, and
+its dense enumeration is exactly the enumeration written to the temporary OBJ.
+When the Ricci solver becomes a library this pair of temporary files can be
+replaced by in-memory data without changing the cone-selection model.
 
 ```cpp {name=flatten-definitions}
 std::string shell_quote(const std::string& value)
@@ -74,6 +87,7 @@ struct RicciConfig
     std::filesystem::path input_path;
     std::filesystem::path target_path;
     std::filesystem::path output_path;
+    FrameFieldConeTargets cone_targets;
 
     std::string command() const
     {
@@ -86,30 +100,45 @@ struct RicciConfig
     }
 };
 
-RicciConfig make_validation_ricci_config(
-    const std::filesystem::path& input_path)
+RicciConfig make_frame_field_ricci_config(
+    const std::filesystem::path& original_input_path,
+    gcs::SurfaceMesh& mesh,
+    gcs::VertexPositionGeometry& geometry,
+    const gcs::VertexData<int>& frame_indices,
+    int field_symmetry)
 {
-    if (input_path.filename() != "stanford_bunny_with_hole.obj")
-    {
-        throw std::runtime_error(
-            "The validation cone targets require "
-            "stanford_bunny_with_hole.obj");
-    }
-
     const std::filesystem::path output_directory =
         std::filesystem::temp_directory_path() / "geometry-central-viewer";
     std::filesystem::create_directories(output_directory);
 
-    RicciConfig config{
-        input_path,
-        "assets/targets_bunny_pi_over_4.txt",
-        output_directory /
-            (input_path.stem().string() + ".ricci-flat.obj")};
+    std::string stem = original_input_path.stem().string();
+    if (stem.empty())
+    {
+        stem = "surface";
+    }
 
-    if (!std::filesystem::is_regular_file(config.target_path))
+    RicciConfig config{
+        output_directory / (stem + ".frame-field-input.obj"),
+        output_directory / (stem + ".frame-field-targets.txt"),
+        output_directory / (stem + ".ricci-flat.obj"),
+        derive_frame_field_cone_targets(
+            mesh, frame_indices, field_symmetry)};
+
+    gcs::writeSurfaceMesh(
+        mesh, geometry, config.input_path.string(), "obj");
+
+    std::ofstream target_output(config.target_path);
+    if (!target_output)
     {
         throw std::runtime_error(
-            "Could not find validation targets: " +
+            "Could not create frame-field targets: " +
+            config.target_path.string());
+    }
+    write_obj_cone_targets(config.cone_targets, target_output);
+    if (!target_output)
+    {
+        throw std::runtime_error(
+            "Failed while writing frame-field targets: " +
             config.target_path.string());
     }
 
@@ -248,8 +277,20 @@ if (flatten_requested)
     {
         validate_ricci_input(mesh, geometry);
 
-        state->status = "Running Ricci flow...";
-        state->job.start(make_validation_ricci_config(input_path));
+        RicciConfig config = make_frame_field_ricci_config(
+            input_path, mesh, geometry, frame_indices, field_symmetry);
+        std::ostringstream status;
+        status << "Running Ricci flow with "
+               << config.cone_targets.targets.size()
+               << " frame-field cones"
+               << "\nIndex sum: "
+               << config.cone_targets.selected_index_sum
+               << " / "
+               << config.cone_targets.required_index_sum
+               << "\nBoundary curvature residual: "
+               << config.cone_targets.curvature_residual;
+        state->status = status.str();
+        state->job.start(std::move(config));
     }
     catch (const std::exception& error)
     {
@@ -280,10 +321,21 @@ if (state->job.ready())
             flattened_mesh->getFaceVertexList());
         polyscope::view::resetCameraToHomeView();
 
-        state->status =
-            "Loaded Ricci mesh using four pi/4 cone targets\nTargets: " +
-            state->job.config.target_path.string() +
-            "\nOutput: " + state->job.config.output_path.string();
+        std::ostringstream status;
+        status << "Loaded Ricci mesh using "
+               << state->job.config.cone_targets.targets.size()
+               << " frame-field cones"
+               << "\nIndex sum: "
+               << state->job.config.cone_targets.selected_index_sum
+               << " / "
+               << state->job.config.cone_targets.required_index_sum
+               << "\nBoundary curvature residual: "
+               << state->job.config.cone_targets.curvature_residual
+               << "\nTargets: "
+               << state->job.config.target_path.string()
+               << "\nOutput: "
+               << state->job.config.output_path.string();
+        state->status = status.str();
     }
     catch (const std::exception& error)
     {
@@ -312,10 +364,13 @@ namespace {
 std::function<void()> make_flatten_callback(
     std::string input_path,
     gcs::SurfaceMesh& mesh,
-    gcs::VertexPositionGeometry& geometry)
+    gcs::VertexPositionGeometry& geometry,
+    gcs::VertexData<int>& frame_indices,
+    int field_symmetry)
 {
     auto state = std::make_shared<FlattenState>();
-    return [state, input_path = std::move(input_path), &mesh, &geometry]() {
+    return [state, input_path = std::move(input_path), &mesh, &geometry,
+            &frame_indices, field_symmetry]() {
         @<flatten-callback-body@>
     };
 }

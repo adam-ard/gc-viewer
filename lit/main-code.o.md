@@ -148,9 +148,14 @@ auto* psMesh = polyscope::registerSurfaceMesh("mesh",
 @<add-mesh-quantities@>
 print_frame_field_diagnostics(
     *mesh, *geometry, frameIndex, fieldSymmetry);
+print_frame_field_cone_targets(
+    derive_frame_field_cone_targets(
+        *mesh, frameIndex, fieldSymmetry),
+    std::cout);
 
 polyscope::state::userCallback =
-    make_flatten_callback(options.mesh, *mesh, *geometry);
+    make_flatten_callback(
+        options.mesh, *mesh, *geometry, frameIndex, fieldSymmetry);
 
 polyscope::show();
 ```
