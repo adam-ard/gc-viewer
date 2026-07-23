@@ -41,6 +41,17 @@ quarter-turn targets are assigned at frame singularities, and the remaining
 curvature is distributed over unselected boundary vertices. The report exposes
 that residual explicitly. A later manual editor should aim to make it zero.
 
+Reducing the cone count and changing the total index are distinct operations.
+For example, removing a \(+1\) and a \(-1\) cone reduces the number of
+constraints without changing their sum. Alternatively, two nearby \(+1\)
+suggestions can be represented experimentally by one \(+2\) prescription.
+Keeping the index sum fixed keeps the same Gauss--Bonnet boundary budget;
+changing it deliberately transfers curvature to or from the unselected
+boundary vertices in additive mode. A smaller cone count often gives the
+continuation solver an easier problem, although a large-magnitude cone can
+itself be difficult, so the editor exposes both quantities rather than
+promising that cone count alone predicts convergence.
+
 ## Public representation
 
 The dense vertex index is important. Geometry Central may remove unused input
@@ -79,7 +90,33 @@ struct FrameFieldConeTargets
     bool satisfies_gauss_bonnet() const;
 };
 
+struct EditableConeTarget
+{
+    std::size_t vertex_index = 0;
+    int original_frame_index = 0;
+    int prescribed_index = 0;
+    bool selected = true;
+};
+
+struct EditableConeTargets
+{
+    int field_symmetry = 0;
+    std::int64_t euler_characteristic = 0;
+    std::int64_t required_index_sum = 0;
+    std::vector<EditableConeTarget> candidates;
+
+    FrameFieldConeTargets active_targets() const;
+    std::size_t active_count() const;
+    void reset_to_frame_field();
+    void deselect_all();
+};
+
 FrameFieldConeTargets derive_frame_field_cone_targets(
+    geometrycentral::surface::SurfaceMesh& mesh,
+    const geometrycentral::surface::VertexData<int>& frame_indices,
+    int field_symmetry);
+
+EditableConeTargets derive_editable_cone_targets(
     geometrycentral::surface::SurfaceMesh& mesh,
     const geometrycentral::surface::VertexData<int>& frame_indices,
     int field_symmetry);
@@ -96,9 +133,21 @@ void print_frame_field_cone_targets(
 ## Derivation and serialization
 
 The target file uses OBJ's one-based vertex convention because the temporary
-solver input is always normalized to OBJ. Comments preserve the originating
-frame index for inspection without changing the Ricci parser's two-column
-format.
+solver input is always normalized to OBJ. Comments preserve the prescribed
+index for inspection without changing the Ricci parser's two-column format.
+
+The editable representation deliberately separates two ideas:
+
+- `original_frame_index` records Geometry Central's immutable suggestion.
+- `prescribed_index` records the value the user currently wants Ricci flow to
+  realize.
+
+Deselection does not destroy either value. This is useful experimentally:
+turning a difficult cone off and back on should recover the user's edited
+value, while *reset* explicitly returns the entire prescription to the computed
+frame field. `active_targets()` creates a small immutable snapshot for a solver
+run, so editing the UI while a background solve is completing cannot change the
+meaning of that run.
 
 ```cpp {name=cone-targets-source tangle=src/cone_targets.cpp}
 #include "cone_targets.h"
@@ -117,6 +166,88 @@ constexpr double pi = 3.141592653589793238462643383279502884;
 bool FrameFieldConeTargets::satisfies_gauss_bonnet() const
 {
     return selected_index_sum == required_index_sum;
+}
+
+namespace {
+FrameFieldConeTargets collect_active_targets(
+    int field_symmetry,
+    std::int64_t euler_characteristic,
+    const std::vector<EditableConeTarget>& candidates)
+{
+    if (field_symmetry <= 0)
+    {
+        throw std::invalid_argument(
+            "field symmetry must be a positive integer");
+    }
+
+    FrameFieldConeTargets result;
+    result.field_symmetry = field_symmetry;
+    result.euler_characteristic = euler_characteristic;
+    result.required_index_sum =
+        static_cast<std::int64_t>(field_symmetry) *
+        euler_characteristic;
+
+    const double curvature_per_index =
+        2.0 * pi / static_cast<double>(field_symmetry);
+    for (const EditableConeTarget& candidate : candidates)
+    {
+        if (!candidate.selected || candidate.prescribed_index == 0)
+        {
+            continue;
+        }
+
+        const double curvature =
+            curvature_per_index *
+            static_cast<double>(candidate.prescribed_index);
+        result.targets.push_back(
+            {candidate.vertex_index, candidate.prescribed_index, curvature});
+        result.selected_index_sum += candidate.prescribed_index;
+        result.selected_curvature_sum += curvature;
+    }
+
+    result.required_curvature_sum =
+        2.0 * pi * static_cast<double>(euler_characteristic);
+    result.curvature_residual =
+        result.required_curvature_sum -
+        result.selected_curvature_sum;
+    return result;
+}
+}
+
+FrameFieldConeTargets EditableConeTargets::active_targets() const
+{
+    return collect_active_targets(
+        field_symmetry, euler_characteristic, candidates);
+}
+
+std::size_t EditableConeTargets::active_count() const
+{
+    std::size_t count = 0;
+    for (const EditableConeTarget& candidate : candidates)
+    {
+        if (candidate.selected && candidate.prescribed_index != 0)
+        {
+            ++count;
+        }
+    }
+    return count;
+}
+
+void EditableConeTargets::reset_to_frame_field()
+{
+    for (EditableConeTarget& candidate : candidates)
+    {
+        candidate.prescribed_index = candidate.original_frame_index;
+        candidate.selected = candidate.original_frame_index != 0;
+    }
+}
+
+void EditableConeTargets::deselect_all()
+{
+    for (EditableConeTarget& candidate : candidates)
+    {
+        candidate.selected = false;
+    }
 }
 
 FrameFieldConeTargets derive_frame_field_cone_targets(
@@ -174,6 +305,29 @@ FrameFieldConeTargets derive_frame_field_cone_targets(
     return result;
 }
 
+EditableConeTargets derive_editable_cone_targets(
+    gcs::SurfaceMesh& mesh,
+    const gcs::VertexData<int>& frame_indices,
+    int field_symmetry)
+{
+    const FrameFieldConeTargets initial =
+        derive_frame_field_cone_targets(
+            mesh, frame_indices, field_symmetry);
+
+    EditableConeTargets editor;
+    editor.field_symmetry = initial.field_symmetry;
+    editor.euler_characteristic = initial.euler_characteristic;
+    editor.required_index_sum = initial.required_index_sum;
+    editor.candidates.reserve(initial.targets.size());
+    for (const FrameFieldConeTarget& target : initial.targets)
+    {
+        editor.candidates.push_back(
+            {target.vertex_index, target.frame_index,
+             target.frame_index, true});
+    }
+    return editor;
+}
+
 void write_obj_cone_targets(
     const FrameFieldConeTargets& targets,
     std::ostream& output)
@@ -189,7 +343,7 @@ void write_obj_cone_targets(
     {
         output << target.vertex_index + 1 << ' '
                << target.curvature_radians
-               << " # frame index " << target.frame_index << '\n';
+               << " # prescribed index " << target.frame_index << '\n';
     }
 }
 
@@ -269,8 +423,9 @@ int main()
     write_obj_cone_targets(residual_targets, serialized);
     expect(serialized.str().find("1 1.570796") != std::string::npos,
            "OBJ targets should be one-based and use pi/2 per index");
-    expect(serialized.str().find("# frame index 1") != std::string::npos,
-           "the serialized comment should retain the frame index");
+    expect(serialized.str().find("# prescribed index 1") !=
+               std::string::npos,
+           "the serialized comment should retain the prescribed index");
 
     indices[disk.vertex(0)] = 4;
     indices[disk.vertex(1)] = 0;
@@ -284,6 +439,35 @@ int main()
     expect(std::abs(complete_targets.targets[0].curvature_radians -
                     2.0 * pi) < 1e-12,
            "index four should map to curvature 2pi");
+
+    indices[disk.vertex(0)] = 1;
+    indices[disk.vertex(1)] = 1;
+    indices[disk.vertex(2)] = 1;
+    EditableConeTargets editor =
+        derive_editable_cone_targets(disk, indices, 4);
+    expect(editor.active_count() == 3,
+           "all frame-field suggestions should initially be active");
+
+    editor.candidates[0].selected = false;
+    editor.candidates[1].prescribed_index = 2;
+    const FrameFieldConeTargets edited = editor.active_targets();
+    expect(edited.targets.size() == 2,
+           "deselected candidates should not reach the solver snapshot");
+    expect(edited.selected_index_sum == 3,
+           "the active sum should use edited index values");
+    expect(edited.targets[0].frame_index == 2,
+           "the solver snapshot should contain the prescribed index");
+    expect(editor.candidates[1].original_frame_index == 1,
+           "editing must preserve Geometry Central's original suggestion");
+
+    editor.deselect_all();
+    expect(editor.active_count() == 0,
+           "deselect all should retain candidates but activate none");
+    editor.reset_to_frame_field();
+    expect(editor.active_count() == 3,
+           "reset should restore every nonzero frame-field suggestion");
+    expect(editor.candidates[1].prescribed_index == 1,
+           "reset should restore the computed index value");
 
     return EXIT_SUCCESS;
 }
