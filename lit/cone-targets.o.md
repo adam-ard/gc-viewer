@@ -6,45 +6,45 @@ also the natural unit for prescribing curvature to Ricci flow.
 
 ## Index and curvature
 
-An \(n\)-symmetric field stores directions modulo a rotation of \(2\pi/n\).
-Geometry Central reports an integer field index \(I(p)\), while the ordinary
-topological index is \(I(p)/n\). A cone representing that singularity therefore
+An $n$-symmetric field stores directions modulo a rotation of $2\pi/n$.
+Geometry Central reports an integer field index $I(p)$, while the ordinary
+topological index is $I(p)/n$. A cone representing that singularity therefore
 has target curvature
 
-\[
+$$
     \bar K(p)=\frac{2\pi}{n}I(p).
-\]
+$$
 
 For the fourfold field used by a quadrilateral layout this becomes
 
-\[
+$$
     \bar K(p)=\frac{\pi}{2}I(p).
-\]
+$$
 
-Thus an index \(+1\) suggests a \(+\pi/2\) cone and an index \(-1\) suggests a
-\(-\pi/2\) cone. Zero-index vertices remain regular and need not appear in the
+Thus an index $+1$ suggests a $+\pi/2$ cone and an index $-1$ suggests a
+$-\pi/2$ cone. Zero-index vertices remain regular and need not appear in the
 target file.
 
 ## Gauss--Bonnet residual
 
-The target curvatures of a surface must sum to \(2\pi\chi\). In index units,
+The target curvatures of a surface must sum to $2\pi\chi$. In index units,
 
-\[
+$$
     \sum_p I(p)=n\chi.
-\]
+$$
 
 For closed fields this is the familiar Poincare--Hopf relation. On an open mesh,
 the boundary-aligned field and Geometry Central's per-vertex index rounding do
-not necessarily make the selected nonzero indices sum to \(n\chi\). We retain
+not necessarily make the selected nonzero indices sum to $n\chi$. We retain
 the solver's *additive* target policy during this intermediate stage: exact
 quarter-turn targets are assigned at frame singularities, and the remaining
 curvature is distributed over unselected boundary vertices. The report exposes
 that residual explicitly. A later manual editor should aim to make it zero.
 
 Reducing the cone count and changing the total index are distinct operations.
-For example, removing a \(+1\) and a \(-1\) cone reduces the number of
-constraints without changing their sum. Alternatively, two nearby \(+1\)
-suggestions can be represented experimentally by one \(+2\) prescription.
+For example, removing a $+1$ and a $-1$ cone reduces the number of
+constraints without changing their sum. Alternatively, two nearby $+1$
+suggestions can be represented experimentally by one $+2$ prescription.
 Keeping the index sum fixed keeps the same Gauss--Bonnet boundary budget;
 changing it deliberately transfers curvature to or from the unselected
 boundary vertices in additive mode. A smaller cone count often gives the
@@ -230,7 +230,7 @@ namespace {
 
 ## Curvature unit
 
-The conversion from index units to radians requires \(\pi\). Keeping the
+The conversion from index units to radians requires $\pi$. Keeping the
 constant inside the private implementation boundary makes it an implementation
 detail rather than part of the public cone-target interface.
 
@@ -253,7 +253,7 @@ bool FrameFieldConeTargets::satisfies_gauss_bonnet() const
 
 ## Freeze active candidates
 
-Each selected, nonzero prescription contributes \(2\pi/n\) radians per index
+Each selected, nonzero prescription contributes $2\pi/n$ radians per index
 unit. The private collector calculates both the selected cone curvature and the
 remaining Gauss--Bonnet budget, producing a self-contained snapshot for one
 solver run.
@@ -363,7 +363,7 @@ Geometry Central's `VertexData` retains its owning mesh, allowing this
 relationship to be checked explicitly before conversion.
 
 The Euler characteristic is computed combinatorially as
-\(\chi=|V|-|E|+|F|\). `getVertexIndices()` then supplies a dense zero-based
+$\chi=|V|-|E|+|F|$. `getVertexIndices()` then supplies a dense zero-based
 enumeration independent of internal handle indices. Only nonzero field indices
 become editable candidates or explicit solver cones.
 
@@ -499,10 +499,9 @@ void print_frame_field_cone_targets(
 
 ## Executable examples
 
-The first example intentionally leaves one index unit of residual. This models
-the transition state before manual editing: the selected cones remain exact
-quarter turns, while the report truthfully records what the boundary must
-absorb.
+These small executable examples exercise the mathematical invariants and the
+editing contract without starting the viewer or Ricci solver. Their assembly
+reads as a sequence of scenarios; each scenario is explained below.
 
 ```cpp {name=cone-targets-test tangle=tests/cone_targets_test.cpp}
 #include "cone_targets.h"
@@ -518,6 +517,30 @@ absorb.
 namespace gcs = geometrycentral::surface;
 
 namespace {
+@<cone-target-test-support@>
+}
+
+int main()
+{
+    @<cone-target-disk-fixture@>
+
+    @<cone-target-residual-example@>
+
+    @<cone-target-complete-example@>
+
+    @<cone-target-editing-example@>
+
+    return EXIT_SUCCESS;
+}
+```
+
+### Lightweight test support
+
+The examples use the same curvature unit as the implementation. A deliberately
+small `expect()` helper keeps each assertion readable while allowing the file
+to run directly as a CTest executable.
+
+```cpp {name=cone-target-test-support}
 constexpr double pi = 3.141592653589793238462643383279502884;
 
 void expect(bool condition, const std::string& explanation)
@@ -529,75 +552,104 @@ void expect(bool condition, const std::string& explanation)
         std::exit(EXIT_FAILURE);
     }
 }
-}
+```
 
-int main()
-{
-    gcs::ManifoldSurfaceMesh disk({{0, 1, 2}});
-    gcs::VertexData<int> indices(disk, 1);
+### A minimal disk
 
-    const FrameFieldConeTargets residual_targets =
-        derive_frame_field_cone_targets(disk, indices, 4);
-    expect(residual_targets.targets.size() == 3,
-           "all three nonzero frame indices should become cones");
-    expect(residual_targets.selected_index_sum == 3,
-           "the selected index sum should be three");
-    expect(residual_targets.required_index_sum == 4,
-           "a disk requires four index units for a 4-field");
-    expect(std::abs(residual_targets.curvature_residual - pi / 2.0) <
-               1e-12,
-           "one missing index unit should leave pi/2 residual");
+One triangle is the smallest manifold triangle mesh with disk topology. It has
+three vertices, three edges, and one face, so
+$\chi=3-3+1=1$. A fourfold field therefore has a required index sum of
+$n\chi=4$. Initializing every vertex to index $+1$ creates a simple
+synthetic input whose sum is three.
 
-    std::ostringstream serialized;
-    write_obj_cone_targets(residual_targets, serialized);
-    expect(serialized.str().find("1 1.570796") != std::string::npos,
-           "OBJ targets should be one-based and use pi/2 per index");
-    expect(serialized.str().find("# prescribed index 1") !=
-               std::string::npos,
-           "the serialized comment should retain the prescribed index");
+```cpp {name=cone-target-disk-fixture}
+gcs::ManifoldSurfaceMesh disk({{0, 1, 2}});
+gcs::VertexData<int> indices(disk, 1);
+```
 
-    indices[disk.vertex(0)] = 4;
-    indices[disk.vertex(1)] = 0;
-    indices[disk.vertex(2)] = 0;
-    const FrameFieldConeTargets complete_targets =
-        derive_frame_field_cone_targets(disk, indices, 4);
-    expect(complete_targets.satisfies_gauss_bonnet(),
-           "an index sum of four should satisfy disk Gauss-Bonnet");
-    expect(complete_targets.targets.size() == 1,
-           "zero-index vertices should not be serialized");
-    expect(std::abs(complete_targets.targets[0].curvature_radians -
-                    2.0 * pi) < 1e-12,
-           "index four should map to curvature 2pi");
+### Expose a residual
 
-    indices[disk.vertex(0)] = 1;
-    indices[disk.vertex(1)] = 1;
-    indices[disk.vertex(2)] = 1;
-    EditableConeTargets editor =
-        derive_editable_cone_targets(disk, indices, 4);
-    expect(editor.active_count() == 3,
-           "all frame-field suggestions should initially be active");
+The three selected $+1$ cones contribute three index units. The missing unit
+corresponds to a residual of $2\pi/4=\pi/2$, which additive mode assigns to
+unselected boundary vertices. Serialization also verifies the conversion to
+radians and OBJ's one-based indexing.
 
-    editor.candidates[0].selected = false;
-    editor.candidates[1].prescribed_index = 2;
-    const FrameFieldConeTargets edited = editor.active_targets();
-    expect(edited.targets.size() == 2,
-           "deselected candidates should not reach the solver snapshot");
-    expect(edited.selected_index_sum == 3,
-           "the active sum should use edited index values");
-    expect(edited.targets[0].frame_index == 2,
-           "the solver snapshot should contain the prescribed index");
-    expect(editor.candidates[1].original_frame_index == 1,
-           "editing must preserve Geometry Central's original suggestion");
+```cpp {name=cone-target-residual-example}
+const FrameFieldConeTargets residual_targets =
+    derive_frame_field_cone_targets(disk, indices, 4);
+expect(residual_targets.targets.size() == 3,
+       "all three nonzero frame indices should become cones");
+expect(residual_targets.selected_index_sum == 3,
+       "the selected index sum should be three");
+expect(residual_targets.required_index_sum == 4,
+       "a disk requires four index units for a 4-field");
+expect(std::abs(residual_targets.curvature_residual - pi / 2.0) <
+           1e-12,
+       "one missing index unit should leave pi/2 residual");
 
-    editor.deselect_all();
-    expect(editor.active_count() == 0,
-           "deselect all should retain candidates but activate none");
-    editor.reset_to_frame_field();
-    expect(editor.active_count() == 3,
-           "reset should restore every nonzero frame-field suggestion");
-    expect(editor.candidates[1].prescribed_index == 1,
-           "reset should restore the computed index value");
+std::ostringstream serialized;
+write_obj_cone_targets(residual_targets, serialized);
+expect(serialized.str().find("1 1.570796") != std::string::npos,
+       "OBJ targets should be one-based and use pi/2 per index");
+expect(serialized.str().find("# prescribed index 1") !=
+           std::string::npos,
+       "the serialized comment should retain the prescribed index");
+```
 
-    return EXIT_SUCCESS;
-}
+### Satisfy the complete budget
+
+Concentrating all four index units at one synthetic cone makes the integer
+budget exact. This deliberately simple case checks that zero-index vertices are
+omitted and that index $+4$ maps to $2\pi$ radians.
+
+```cpp {name=cone-target-complete-example}
+indices[disk.vertex(0)] = 4;
+indices[disk.vertex(1)] = 0;
+indices[disk.vertex(2)] = 0;
+const FrameFieldConeTargets complete_targets =
+    derive_frame_field_cone_targets(disk, indices, 4);
+expect(complete_targets.satisfies_gauss_bonnet(),
+       "an index sum of four should satisfy disk Gauss-Bonnet");
+expect(complete_targets.targets.size() == 1,
+       "zero-index vertices should not be serialized");
+expect(std::abs(complete_targets.targets[0].curvature_radians -
+                2.0 * pi) < 1e-12,
+       "index four should map to curvature 2pi");
+```
+
+### Preserve editing semantics
+
+Restoring the three $+1$ suggestions lets the example vary selection and
+prescription independently. The resulting snapshot must reflect only active
+prescriptions, while reset must recover Geometry Central's original values.
+
+```cpp {name=cone-target-editing-example}
+indices[disk.vertex(0)] = 1;
+indices[disk.vertex(1)] = 1;
+indices[disk.vertex(2)] = 1;
+EditableConeTargets editor =
+    derive_editable_cone_targets(disk, indices, 4);
+expect(editor.active_count() == 3,
+       "all frame-field suggestions should initially be active");
+
+editor.candidates[0].selected = false;
+editor.candidates[1].prescribed_index = 2;
+const FrameFieldConeTargets edited = editor.active_targets();
+expect(edited.targets.size() == 2,
+       "deselected candidates should not reach the solver snapshot");
+expect(edited.selected_index_sum == 3,
+       "the active sum should use edited index values");
+expect(edited.targets[0].frame_index == 2,
+       "the solver snapshot should contain the prescribed index");
+expect(editor.candidates[1].original_frame_index == 1,
+       "editing must preserve Geometry Central's original suggestion");
+
+editor.deselect_all();
+expect(editor.active_count() == 0,
+       "deselect all should retain candidates but activate none");
+editor.reset_to_frame_field();
+expect(editor.active_count() == 3,
+       "reset should restore every nonzero frame-field suggestion");
+expect(editor.candidates[1].prescribed_index == 1,
+       "reset should restore the computed index value");
 ```
