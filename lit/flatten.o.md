@@ -6,6 +6,10 @@ and UI state remain private to the implementation.
 
 # Public Interface
 
+```cpp {name=flatten-interface-includes}
+"flatten.h"
+```
+
 ```cpp {name=flatten-header tangle=src/flatten.h}
 #pragma once
 
@@ -28,7 +32,7 @@ std::function<void()> make_flatten_callback(
 
 # Implementation Includes
 
-```cpp {name=flatten-includes}
+```cpp {name=flatten-implementation-includes}
 "cone_targets.h"
 "flatten.h"
 "mesh_preflight.h"
@@ -537,7 +541,7 @@ if (!state->status.empty())
 # Implementation File
 
 ```cpp {name=flatten-source tangle=src/flatten.cpp}
-#include @<flatten-includes@>
+#include @<flatten-implementation-includes@>
 
 namespace gc = geometrycentral;
 namespace gcs = geometrycentral::surface;

@@ -1,3 +1,45 @@
+# Main-code dependencies
+
+This section owns the library and standard-library facilities used by the
+viewer pipeline and its small diagnostic helpers.
+
+```cpp {name=main-code-includes}
+"geometrycentral/surface/direction_fields.h"
+"geometrycentral/surface/manifold_surface_mesh.h"
+"geometrycentral/surface/meshio.h"
+"geometrycentral/surface/surface_mesh.h"
+"geometrycentral/surface/vertex_position_geometry.h"
+
+"polyscope/polyscope.h"
+"polyscope/surface_mesh.h"
+
+<iostream>
+<memory>
+<tuple>
+```
+
+# Namespace aliases
+
+These aliases apply to the entire generated `main.cpp` translation unit. They
+keep Geometry Central's mathematical and surface-mesh types readable throughout
+the pipeline without importing any names into the global namespace.
+
+```cpp {name=main-code-namespace-aliases}
+namespace gc = geometrycentral;
+namespace gcs = geometrycentral::surface;
+```
+
+# File-local helper definitions
+
+The viewer pipeline uses several small diagnostic helpers. This aggregate keeps
+their individual categories within this implementation section while giving
+the top-level executable outline a single definition callout.
+
+```cpp {name=main-code-defs}
+@<ff-defs@>
+@<mesh-stats-defs@>
+```
+
 # Read and populate mesh variables
 
 We can either use manifold specific mesh classes or more general ones. For most of the operations we do, we require that the surface be manifold, so that is the default ([cmdline.o.md](cmdline.o.md)). But occassionally it is nice to load a non-manifold model, just to visualize it.
@@ -70,7 +112,7 @@ psMesh->addVertexScalarQuantity("Gaussian Curvature",
 
 # Frame-field Diagnostics
 
-```cpp {name=definitions}
+```cpp {name=ff-defs}
 void print_frame_field_diagnostics(
     gcs::SurfaceMesh& mesh,
     const gcs::VertexPositionGeometry& geometry,
@@ -116,7 +158,7 @@ void print_frame_field_diagnostics(
 
 # Mesh Stats Function
 
-```cpp {name=definitions}
+```cpp {name=mesh-stats-defs}
 void print_mesh_stats(gcs::SurfaceMesh& mesh)
 {
     std::cout << "Loaded mesh: " << mesh.nVertices() << " vertices, "
@@ -146,16 +188,14 @@ auto* psMesh = polyscope::registerSurfaceMesh("mesh",
 
 @<compute-cross-field@>
 @<add-mesh-quantities@>
-print_frame_field_diagnostics(
-    *mesh, *geometry, frameIndex, fieldSymmetry);
+
+print_frame_field_diagnostics(*mesh, *geometry, frameIndex, fieldSymmetry);
 print_frame_field_cone_targets(
-    derive_frame_field_cone_targets(
-        *mesh, frameIndex, fieldSymmetry),
+    derive_frame_field_cone_targets(*mesh, frameIndex, fieldSymmetry),
     std::cout);
 
 polyscope::state::userCallback =
-    make_flatten_callback(
-        options.mesh, *mesh, *geometry, frameIndex, fieldSymmetry);
+    make_flatten_callback(options.mesh, *mesh, *geometry, frameIndex, fieldSymmetry);
 
 polyscope::show();
 ```

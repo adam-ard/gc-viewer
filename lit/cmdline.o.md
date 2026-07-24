@@ -1,5 +1,11 @@
 # Setup commandline options handling
 
+```cpp {name=cmdline-includes}
+<cstdlib>
+<iostream>
+<string>
+```
+
 ```cpp {name=cmdline-defs}
 struct Options
 {
@@ -60,4 +66,3 @@ if (!options.mesh)
     return EXIT_FAILURE;
 }
 ```
-

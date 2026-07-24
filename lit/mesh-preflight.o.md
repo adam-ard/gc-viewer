@@ -81,6 +81,10 @@ A preflight returns data rather than merely throwing an exception.  The viewer
 can teach the user *why* a mesh was rejected, and future UI work can display
 every failed condition at once.
 
+```cpp {name=mesh-preflight-interface-includes}
+"mesh_preflight.h"
+```
+
 ```cpp {name=mesh-preflight-header tangle=src/mesh_preflight.h}
 #pragma once
 

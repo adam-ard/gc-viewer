@@ -59,6 +59,13 @@ vertices while loading, and mesh mutation can make raw handle indices sparse.
 `getVertexIndices()` supplies the canonical dense enumeration used when the
 normalized solver input is written.
 
+Consumers use the self-contained public header; implementation dependencies
+remain private to the generated source file.
+
+```cpp {name=cone-targets-interface-includes}
+"cone_targets.h"
+```
+
 ```cpp {name=cone-targets-header tangle=src/cone_targets.h}
 #pragma once
 
