@@ -66,6 +66,13 @@ remain private to the generated source file.
 "cone_targets.h"
 ```
 
+# Public header assembly
+
+The public header combines two representations and the operations that create,
+serialize, and report them. Keeping this assembly shallow makes the generated
+header conventional while allowing the literate source to explain each concept
+next to its definition.
+
 ```cpp {name=cone-targets-header tangle=src/cone_targets.h}
 #pragma once
 
@@ -76,6 +83,25 @@ remain private to the generated source file.
 #include <iosfwd>
 #include <vector>
 
+@<cone-target-snapshot-types@>
+
+@<editable-cone-target-types@>
+
+@<cone-target-operations@>
+```
+
+## Immutable solver snapshot
+
+`FrameFieldConeTarget` is one prescribed cone in solver-ready form: a dense
+zero-based vertex index, an integer index prescription, and the corresponding
+curvature in radians. `FrameFieldConeTargets` packages those cones with both
+sides of the Gauss--Bonnet budget. This immutable-by-convention snapshot is what
+one solver run and its diagnostics share.
+
+The index sums are integral, so `satisfies_gauss_bonnet()` can test them exactly
+instead of comparing rounded curvature values.
+
+```cpp {name=cone-target-snapshot-types}
 struct FrameFieldConeTarget
 {
     std::size_t vertex_index = 0;
@@ -96,7 +122,18 @@ struct FrameFieldConeTargets
 
     bool satisfies_gauss_bonnet() const;
 };
+```
 
+## Editable candidate set
+
+The editor retains Geometry Central's original suggestion independently from
+the current prescription. Selection is a third, orthogonal state: deselecting a
+candidate temporarily excludes it without discarding either index value.
+
+`active_targets()` freezes the current choices into the solver snapshot above.
+The remaining operations support UI counts and explicit bulk edits.
+
+```cpp {name=editable-cone-target-types}
 struct EditableConeTarget
 {
     std::size_t vertex_index = 0;
@@ -117,7 +154,16 @@ struct EditableConeTargets
     void reset_to_frame_field();
     void deselect_all();
 };
+```
 
+## Public operations
+
+The two derivation functions offer either an immediate snapshot or an editable
+candidate set from the same Geometry Central field indices. Serialization
+writes the Ricci solver's OBJ-indexed target format, while reporting provides a
+human-readable account of the same curvature budget.
+
+```cpp {name=cone-target-operations}
 FrameFieldConeTargets derive_frame_field_cone_targets(
     geometrycentral::surface::SurfaceMesh& mesh,
     const geometrycentral::surface::VertexData<int>& frame_indices,
@@ -137,24 +183,12 @@ void print_frame_field_cone_targets(
     std::ostream& output);
 ```
 
-## Derivation and serialization
+## Implementation assembly
 
-The target file uses OBJ's one-based vertex convention because the temporary
-solver input is always normalized to OBJ. Comments preserve the prescribed
-index for inspection without changing the Ricci parser's two-column format.
-
-The editable representation deliberately separates two ideas:
-
-- `original_frame_index` records Geometry Central's immutable suggestion.
-- `prescribed_index` records the value the user currently wants Ricci flow to
-  realize.
-
-Deselection does not destroy either value. This is useful experimentally:
-turning a difficult cone off and back on should recover the user's edited
-value, while *reset* explicitly returns the entire prescription to the computed
-frame field. `active_targets()` creates a small immutable snapshot for a solver
-run, so editing the UI while a background solve is completing cannot change the
-meaning of that run.
+The implementation follows the transformation from discrete field indices to
+solver input. Private utilities establish the curvature unit and assemble
+snapshots; public operations then expose editing, initial derivation, and
+output.
 
 ```cpp {name=cone-targets-source tangle=src/cone_targets.cpp}
 #include "cone_targets.h"
@@ -166,16 +200,65 @@ meaning of that run.
 
 namespace gcs = geometrycentral::surface;
 
-namespace {
-constexpr double pi = 3.141592653589793238462643383279502884;
-}
+@<cone-target-private-definitions@>
 
+@<cone-target-budget-check@>
+
+@<editable-cone-target-operations@>
+
+@<derive-cone-targets@>
+
+@<cone-target-output@>
+```
+
+## Private implementation boundary
+
+The anonymous namespace gives its contents internal linkage: these names are
+visible throughout `cone_targets.cpp` but cannot collide with names in another
+translation unit. It contains the conversion constant and snapshot-collection
+helper because neither belongs to the public interface. Public member
+definitions remain outside this namespace because their classes are declared
+in the global namespace by the header.
+
+```cpp {name=cone-target-private-definitions}
+namespace {
+@<cone-target-curvature-constant@>
+
+@<collect-active-cone-targets@>
+}
+```
+
+## Curvature unit
+
+The conversion from index units to radians requires \(\pi\). Keeping the
+constant inside the private implementation boundary makes it an implementation
+detail rather than part of the public cone-target interface.
+
+```cpp {name=cone-target-curvature-constant}
+constexpr double pi = 3.141592653589793238462643383279502884;
+```
+
+## Check the topological budget
+
+Gauss--Bonnet satisfaction is checked in exact integer index units. The
+equivalent curvature values are floating-point quantities and are retained for
+solver input and human-readable diagnostics.
+
+```cpp {name=cone-target-budget-check}
 bool FrameFieldConeTargets::satisfies_gauss_bonnet() const
 {
     return selected_index_sum == required_index_sum;
 }
+```
 
-namespace {
+## Freeze active candidates
+
+Each selected, nonzero prescription contributes \(2\pi/n\) radians per index
+unit. The private collector calculates both the selected cone curvature and the
+remaining Gauss--Bonnet budget, producing a self-contained snapshot for one
+solver run.
+
+```cpp {name=collect-active-cone-targets}
 FrameFieldConeTargets collect_active_targets(
     int field_symmetry,
     std::int64_t euler_characteristic,
@@ -219,8 +302,23 @@ FrameFieldConeTargets collect_active_targets(
         result.selected_curvature_sum;
     return result;
 }
-}
+```
 
+## Edit without losing the frame-field suggestion
+
+The editable representation deliberately separates two ideas:
+
+- `original_frame_index` records Geometry Central's immutable suggestion.
+- `prescribed_index` records the value the user currently wants Ricci flow to
+  realize.
+
+Deselection does not destroy either value. Turning a difficult cone off and
+back on therefore recovers the user's edited value, while *reset* explicitly
+returns the entire prescription to the computed frame field.
+`active_targets()` freezes the current state so subsequent UI edits cannot
+change the meaning of a solver run already in progress.
+
+```cpp {name=editable-cone-target-operations}
 FrameFieldConeTargets EditableConeTargets::active_targets() const
 {
     return collect_active_targets(
@@ -256,7 +354,20 @@ void EditableConeTargets::deselect_all()
         candidate.selected = false;
     }
 }
+```
 
+## Derive candidates from Geometry Central
+
+The frame indices and output vertex identifiers must refer to the same mesh.
+Geometry Central's `VertexData` retains its owning mesh, allowing this
+relationship to be checked explicitly before conversion.
+
+The Euler characteristic is computed combinatorially as
+\(\chi=|V|-|E|+|F|\). `getVertexIndices()` then supplies a dense zero-based
+enumeration independent of internal handle indices. Only nonzero field indices
+become editable candidates or explicit solver cones.
+
+```cpp {name=derive-cone-targets}
 FrameFieldConeTargets derive_frame_field_cone_targets(
     gcs::SurfaceMesh& mesh,
     const gcs::VertexData<int>& frame_indices,
@@ -334,7 +445,18 @@ EditableConeTargets derive_editable_cone_targets(
     }
     return editor;
 }
+```
 
+## Serialize and report a snapshot
+
+The target file uses OBJ's one-based vertex convention because the temporary
+solver input is normalized to OBJ. Comments preserve the prescribed index for
+inspection without changing the Ricci parser's two-column format.
+
+The diagnostic report presents the same snapshot at a higher level and makes
+any boundary curvature residual visible before the solver starts.
+
+```cpp {name=cone-target-output}
 void write_obj_cone_targets(
     const FrameFieldConeTargets& targets,
     std::ostream& output)
