@@ -102,25 +102,23 @@ The index sums are integral, so `satisfies_gauss_bonnet()` can test them exactly
 instead of comparing rounded curvature values.
 
 ```cpp {name=cone-target-snapshot-types}
-struct FrameFieldConeTarget
-{
-    std::size_t vertex_index = 0;
-    int frame_index = 0;
-    double curvature_radians = 0.0;
+struct FrameFieldConeTarget {
+  std::size_t vertex_index = 0;
+  int frame_index = 0;
+  double curvature_radians = 0.0;
 };
 
-struct FrameFieldConeTargets
-{
-    int field_symmetry = 0;
-    std::int64_t euler_characteristic = 0;
-    std::int64_t selected_index_sum = 0;
-    std::int64_t required_index_sum = 0;
-    double selected_curvature_sum = 0.0;
-    double required_curvature_sum = 0.0;
-    double curvature_residual = 0.0;
-    std::vector<FrameFieldConeTarget> targets;
+struct FrameFieldConeTargets {
+  int field_symmetry = 0;
+  std::int64_t euler_characteristic = 0;
+  std::int64_t selected_index_sum = 0;
+  std::int64_t required_index_sum = 0;
+  double selected_curvature_sum = 0.0;
+  double required_curvature_sum = 0.0;
+  double curvature_residual = 0.0;
+  std::vector<FrameFieldConeTarget> targets;
 
-    bool satisfies_gauss_bonnet() const;
+  bool satisfies_gauss_bonnet() const;
 };
 ```
 
@@ -134,25 +132,23 @@ candidate temporarily excludes it without discarding either index value.
 The remaining operations support UI counts and explicit bulk edits.
 
 ```cpp {name=editable-cone-target-types}
-struct EditableConeTarget
-{
-    std::size_t vertex_index = 0;
-    int original_frame_index = 0;
-    int prescribed_index = 0;
-    bool selected = true;
+struct EditableConeTarget {
+  std::size_t vertex_index = 0;
+  int original_frame_index = 0;
+  int prescribed_index = 0;
+  bool selected = true;
 };
 
-struct EditableConeTargets
-{
-    int field_symmetry = 0;
-    std::int64_t euler_characteristic = 0;
-    std::int64_t required_index_sum = 0;
-    std::vector<EditableConeTarget> candidates;
+struct EditableConeTargets {
+  int field_symmetry = 0;
+  std::int64_t euler_characteristic = 0;
+  std::int64_t required_index_sum = 0;
+  std::vector<EditableConeTarget> candidates;
 
-    FrameFieldConeTargets active_targets() const;
-    std::size_t active_count() const;
-    void reset_to_frame_field();
-    void deselect_all();
+  FrameFieldConeTargets active_targets() const;
+  std::size_t active_count() const;
+  void reset_to_frame_field();
+  void deselect_all();
 };
 ```
 
@@ -174,13 +170,11 @@ EditableConeTargets derive_editable_cone_targets(
     const geometrycentral::surface::VertexData<int>& frame_indices,
     int field_symmetry);
 
-void write_obj_cone_targets(
-    const FrameFieldConeTargets& targets,
-    std::ostream& output);
+void write_obj_cone_targets(const FrameFieldConeTargets& targets,
+                            std::ostream& output);
 
-void print_frame_field_cone_targets(
-    const FrameFieldConeTargets& targets,
-    std::ostream& output);
+void print_frame_field_cone_targets(const FrameFieldConeTargets& targets,
+                                    std::ostream& output);
 ```
 
 ## Implementation assembly
@@ -225,7 +219,7 @@ namespace {
 @<cone-target-curvature-constant@>
 
 @<collect-active-cone-targets@>
-}
+}  // namespace
 ```
 
 ## Curvature unit
@@ -245,9 +239,8 @@ equivalent curvature values are floating-point quantities and are retained for
 solver input and human-readable diagnostics.
 
 ```cpp {name=cone-target-budget-check}
-bool FrameFieldConeTargets::satisfies_gauss_bonnet() const
-{
-    return selected_index_sum == required_index_sum;
+bool FrameFieldConeTargets::satisfies_gauss_bonnet() const {
+  return selected_index_sum == required_index_sum;
 }
 ```
 
@@ -262,45 +255,37 @@ solver run.
 FrameFieldConeTargets collect_active_targets(
     int field_symmetry,
     std::int64_t euler_characteristic,
-    const std::vector<EditableConeTarget>& candidates)
-{
-    if (field_symmetry <= 0)
-    {
-        throw std::invalid_argument(
-            "field symmetry must be a positive integer");
+    const std::vector<EditableConeTarget>& candidates) {
+  if (field_symmetry <= 0) {
+    throw std::invalid_argument("field symmetry must be a positive integer");
+  }
+
+  FrameFieldConeTargets result;
+  result.field_symmetry = field_symmetry;
+  result.euler_characteristic = euler_characteristic;
+  result.required_index_sum =
+      static_cast<std::int64_t>(field_symmetry) * euler_characteristic;
+
+  const double curvature_per_index =
+      2.0 * pi / static_cast<double>(field_symmetry);
+  for (const EditableConeTarget& candidate : candidates) {
+    if (!candidate.selected || candidate.prescribed_index == 0) {
+      continue;
     }
 
-    FrameFieldConeTargets result;
-    result.field_symmetry = field_symmetry;
-    result.euler_characteristic = euler_characteristic;
-    result.required_index_sum =
-        static_cast<std::int64_t>(field_symmetry) *
-        euler_characteristic;
+    const double curvature =
+        curvature_per_index * static_cast<double>(candidate.prescribed_index);
+    result.targets.push_back(
+        {candidate.vertex_index, candidate.prescribed_index, curvature});
+    result.selected_index_sum += candidate.prescribed_index;
+    result.selected_curvature_sum += curvature;
+  }
 
-    const double curvature_per_index =
-        2.0 * pi / static_cast<double>(field_symmetry);
-    for (const EditableConeTarget& candidate : candidates)
-    {
-        if (!candidate.selected || candidate.prescribed_index == 0)
-        {
-            continue;
-        }
-
-        const double curvature =
-            curvature_per_index *
-            static_cast<double>(candidate.prescribed_index);
-        result.targets.push_back(
-            {candidate.vertex_index, candidate.prescribed_index, curvature});
-        result.selected_index_sum += candidate.prescribed_index;
-        result.selected_curvature_sum += curvature;
-    }
-
-    result.required_curvature_sum =
-        2.0 * pi * static_cast<double>(euler_characteristic);
-    result.curvature_residual =
-        result.required_curvature_sum -
-        result.selected_curvature_sum;
-    return result;
+  result.required_curvature_sum =
+      2.0 * pi * static_cast<double>(euler_characteristic);
+  result.curvature_residual =
+      result.required_curvature_sum - result.selected_curvature_sum;
+  return result;
 }
 ```
 
@@ -319,40 +304,32 @@ returns the entire prescription to the computed frame field.
 change the meaning of a solver run already in progress.
 
 ```cpp {name=editable-cone-target-operations}
-FrameFieldConeTargets EditableConeTargets::active_targets() const
-{
-    return collect_active_targets(
-        field_symmetry, euler_characteristic, candidates);
+FrameFieldConeTargets EditableConeTargets::active_targets() const {
+  return collect_active_targets(field_symmetry, euler_characteristic,
+                                candidates);
 }
 
-std::size_t EditableConeTargets::active_count() const
-{
-    std::size_t count = 0;
-    for (const EditableConeTarget& candidate : candidates)
-    {
-        if (candidate.selected && candidate.prescribed_index != 0)
-        {
-            ++count;
-        }
+std::size_t EditableConeTargets::active_count() const {
+  std::size_t count = 0;
+  for (const EditableConeTarget& candidate : candidates) {
+    if (candidate.selected && candidate.prescribed_index != 0) {
+      ++count;
     }
-    return count;
+  }
+  return count;
 }
 
-void EditableConeTargets::reset_to_frame_field()
-{
-    for (EditableConeTarget& candidate : candidates)
-    {
-        candidate.prescribed_index = candidate.original_frame_index;
-        candidate.selected = candidate.original_frame_index != 0;
-    }
+void EditableConeTargets::reset_to_frame_field() {
+  for (EditableConeTarget& candidate : candidates) {
+    candidate.prescribed_index = candidate.original_frame_index;
+    candidate.selected = candidate.original_frame_index != 0;
+  }
 }
 
-void EditableConeTargets::deselect_all()
-{
-    for (EditableConeTarget& candidate : candidates)
-    {
-        candidate.selected = false;
-    }
+void EditableConeTargets::deselect_all() {
+  for (EditableConeTarget& candidate : candidates) {
+    candidate.selected = false;
+  }
 }
 ```
 
@@ -371,79 +348,63 @@ become editable candidates or explicit solver cones.
 FrameFieldConeTargets derive_frame_field_cone_targets(
     gcs::SurfaceMesh& mesh,
     const gcs::VertexData<int>& frame_indices,
-    int field_symmetry)
-{
-    if (frame_indices.getMesh() != &mesh)
-    {
-        throw std::invalid_argument(
-            "frame indices and cone targets must use the same mesh");
-    }
-    if (field_symmetry <= 0)
-    {
-        throw std::invalid_argument(
-            "field symmetry must be a positive integer");
-    }
+    int field_symmetry) {
+  if (frame_indices.getMesh() != &mesh) {
+    throw std::invalid_argument(
+        "frame indices and cone targets must use the same mesh");
+  }
+  if (field_symmetry <= 0) {
+    throw std::invalid_argument("field symmetry must be a positive integer");
+  }
 
-    FrameFieldConeTargets result;
-    result.field_symmetry = field_symmetry;
-    result.euler_characteristic =
-        static_cast<std::int64_t>(mesh.nVertices()) -
-        static_cast<std::int64_t>(mesh.nEdges()) +
-        static_cast<std::int64_t>(mesh.nFaces());
-    result.required_index_sum =
-        static_cast<std::int64_t>(field_symmetry) *
-        result.euler_characteristic;
+  FrameFieldConeTargets result;
+  result.field_symmetry = field_symmetry;
+  result.euler_characteristic = static_cast<std::int64_t>(mesh.nVertices()) -
+                                static_cast<std::int64_t>(mesh.nEdges()) +
+                                static_cast<std::int64_t>(mesh.nFaces());
+  result.required_index_sum =
+      static_cast<std::int64_t>(field_symmetry) * result.euler_characteristic;
 
-    const double curvature_per_index =
-        2.0 * pi / static_cast<double>(field_symmetry);
-    const gcs::VertexData<std::size_t> dense_indices =
-        mesh.getVertexIndices();
+  const double curvature_per_index =
+      2.0 * pi / static_cast<double>(field_symmetry);
+  const gcs::VertexData<std::size_t> dense_indices = mesh.getVertexIndices();
 
-    for (gcs::Vertex vertex : mesh.vertices())
-    {
-        const int index = frame_indices[vertex];
-        result.selected_index_sum += index;
-        if (index == 0)
-        {
-            continue;
-        }
-
-        const double curvature =
-            curvature_per_index * static_cast<double>(index);
-        result.targets.push_back(
-            {dense_indices[vertex], index, curvature});
-        result.selected_curvature_sum += curvature;
+  for (gcs::Vertex vertex : mesh.vertices()) {
+    const int index = frame_indices[vertex];
+    result.selected_index_sum += index;
+    if (index == 0) {
+      continue;
     }
 
-    result.required_curvature_sum =
-        2.0 * pi * static_cast<double>(result.euler_characteristic);
-    result.curvature_residual =
-        result.required_curvature_sum -
-        result.selected_curvature_sum;
-    return result;
+    const double curvature = curvature_per_index * static_cast<double>(index);
+    result.targets.push_back({dense_indices[vertex], index, curvature});
+    result.selected_curvature_sum += curvature;
+  }
+
+  result.required_curvature_sum =
+      2.0 * pi * static_cast<double>(result.euler_characteristic);
+  result.curvature_residual =
+      result.required_curvature_sum - result.selected_curvature_sum;
+  return result;
 }
 
 EditableConeTargets derive_editable_cone_targets(
     gcs::SurfaceMesh& mesh,
     const gcs::VertexData<int>& frame_indices,
-    int field_symmetry)
-{
-    const FrameFieldConeTargets initial =
-        derive_frame_field_cone_targets(
-            mesh, frame_indices, field_symmetry);
+    int field_symmetry) {
+  const FrameFieldConeTargets initial =
+      derive_frame_field_cone_targets(mesh, frame_indices, field_symmetry);
 
-    EditableConeTargets editor;
-    editor.field_symmetry = initial.field_symmetry;
-    editor.euler_characteristic = initial.euler_characteristic;
-    editor.required_index_sum = initial.required_index_sum;
-    editor.candidates.reserve(initial.targets.size());
-    for (const FrameFieldConeTarget& target : initial.targets)
-    {
-        editor.candidates.push_back(
-            {target.vertex_index, target.frame_index,
-             target.frame_index, true});
-    }
-    return editor;
+  EditableConeTargets editor;
+  editor.field_symmetry = initial.field_symmetry;
+  editor.euler_characteristic = initial.euler_characteristic;
+  editor.required_index_sum = initial.required_index_sum;
+  editor.candidates.reserve(initial.targets.size());
+  for (const FrameFieldConeTarget& target : initial.targets) {
+    editor.candidates.push_back(
+        {target.vertex_index, target.frame_index, target.frame_index, true});
+  }
+  return editor;
 }
 ```
 
@@ -457,43 +418,34 @@ The diagnostic report presents the same snapshot at a higher level and makes
 any boundary curvature residual visible before the solver starts.
 
 ```cpp {name=cone-target-output}
-void write_obj_cone_targets(
-    const FrameFieldConeTargets& targets,
-    std::ostream& output)
-{
-    output << "# Generated from Geometry Central frame-field singularities\n"
-           << "# Format: OBJ vertex_id (1-based) curvature_radians\n"
-           << "# field symmetry: " << targets.field_symmetry << '\n'
-           << "# selected index sum: " << targets.selected_index_sum << '\n'
-           << "# required index sum: " << targets.required_index_sum << '\n'
-           << std::setprecision(17);
+void write_obj_cone_targets(const FrameFieldConeTargets& targets,
+                            std::ostream& output) {
+  output << "# Generated from Geometry Central frame-field singularities\n"
+         << "# Format: OBJ vertex_id (1-based) curvature_radians\n"
+         << "# field symmetry: " << targets.field_symmetry << '\n'
+         << "# selected index sum: " << targets.selected_index_sum << '\n'
+         << "# required index sum: " << targets.required_index_sum << '\n'
+         << std::setprecision(17);
 
-    for (const FrameFieldConeTarget& target : targets.targets)
-    {
-        output << target.vertex_index + 1 << ' '
-               << target.curvature_radians
-               << " # prescribed index " << target.frame_index << '\n';
-    }
+  for (const FrameFieldConeTarget& target : targets.targets) {
+    output << target.vertex_index + 1 << ' ' << target.curvature_radians
+           << " # prescribed index " << target.frame_index << '\n';
+  }
 }
 
-void print_frame_field_cone_targets(
-    const FrameFieldConeTargets& targets,
-    std::ostream& output)
-{
-    output << "Frame-field Ricci targets:\n"
-           << "  selected cones: " << targets.targets.size() << '\n'
-           << "  selected index sum: "
-           << targets.selected_index_sum << '\n'
-           << "  required index sum: "
-           << targets.required_index_sum << '\n'
-           << "  Gauss-Bonnet curvature residual: "
-           << targets.curvature_residual << " radians\n";
+void print_frame_field_cone_targets(const FrameFieldConeTargets& targets,
+                                    std::ostream& output) {
+  output << "Frame-field Ricci targets:\n"
+         << "  selected cones: " << targets.targets.size() << '\n'
+         << "  selected index sum: " << targets.selected_index_sum << '\n'
+         << "  required index sum: " << targets.required_index_sum << '\n'
+         << "  Gauss-Bonnet curvature residual: " << targets.curvature_residual
+         << " radians\n";
 
-    if (!targets.satisfies_gauss_bonnet())
-    {
-        output << "  note: additive mode will distribute this residual "
-                  "over unselected boundary vertices\n";
-    }
+  if (!targets.satisfies_gauss_bonnet()) {
+    output << "  note: additive mode will distribute this residual "
+              "over unselected boundary vertices\n";
+  }
 }
 ```
 
@@ -520,17 +472,16 @@ namespace {
 @<cone-target-test-support@>
 }
 
-int main()
-{
-    @<cone-target-disk-fixture@>
+int main() {
+  @<cone-target-disk-fixture@>
 
-    @<cone-target-residual-example@>
+  @<cone-target-residual-example@>
 
-    @<cone-target-complete-example@>
+  @<cone-target-complete-example@>
 
-    @<cone-target-editing-example@>
+  @<cone-target-editing-example@>
 
-    return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }
 ```
 
@@ -543,14 +494,11 @@ to run directly as a CTest executable.
 ```cpp {name=cone-target-test-support}
 constexpr double pi = 3.141592653589793238462643383279502884;
 
-void expect(bool condition, const std::string& explanation)
-{
-    if (!condition)
-    {
-        std::cerr << "Cone-target example failed: "
-                  << explanation << '\n';
-        std::exit(EXIT_FAILURE);
-    }
+void expect(bool condition, const std::string& explanation) {
+  if (!condition) {
+    std::cerr << "Cone-target example failed: " << explanation << '\n';
+    std::exit(EXIT_FAILURE);
+  }
 }
 ```
 
@@ -583,16 +531,14 @@ expect(residual_targets.selected_index_sum == 3,
        "the selected index sum should be three");
 expect(residual_targets.required_index_sum == 4,
        "a disk requires four index units for a 4-field");
-expect(std::abs(residual_targets.curvature_residual - pi / 2.0) <
-           1e-12,
+expect(std::abs(residual_targets.curvature_residual - pi / 2.0) < 1e-12,
        "one missing index unit should leave pi/2 residual");
 
 std::ostringstream serialized;
 write_obj_cone_targets(residual_targets, serialized);
 expect(serialized.str().find("1 1.570796") != std::string::npos,
        "OBJ targets should be one-based and use pi/2 per index");
-expect(serialized.str().find("# prescribed index 1") !=
-           std::string::npos,
+expect(serialized.str().find("# prescribed index 1") != std::string::npos,
        "the serialized comment should retain the prescribed index");
 ```
 
@@ -612,8 +558,8 @@ expect(complete_targets.satisfies_gauss_bonnet(),
        "an index sum of four should satisfy disk Gauss-Bonnet");
 expect(complete_targets.targets.size() == 1,
        "zero-index vertices should not be serialized");
-expect(std::abs(complete_targets.targets[0].curvature_radians -
-                2.0 * pi) < 1e-12,
+expect(std::abs(complete_targets.targets[0].curvature_radians - 2.0 * pi) <
+           1e-12,
        "index four should map to curvature 2pi");
 ```
 
@@ -627,8 +573,7 @@ prescriptions, while reset must recover Geometry Central's original values.
 indices[disk.vertex(0)] = 1;
 indices[disk.vertex(1)] = 1;
 indices[disk.vertex(2)] = 1;
-EditableConeTargets editor =
-    derive_editable_cone_targets(disk, indices, 4);
+EditableConeTargets editor = derive_editable_cone_targets(disk, indices, 4);
 expect(editor.active_count() == 3,
        "all frame-field suggestions should initially be active");
 

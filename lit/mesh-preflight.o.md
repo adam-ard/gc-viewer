@@ -98,56 +98,52 @@ every failed condition at once.
 namespace geometrycentral::surface {
 class SurfaceMesh;
 class VertexPositionGeometry;
-}
+}  // namespace geometrycentral::surface
 
-struct RicciTopologyPreflight
-{
-    std::size_t connected_components = 0;
-    std::size_t boundary_loops = 0;
-    std::int64_t euler_characteristic = 0;
-    std::optional<std::int64_t> total_genus;
+struct RicciTopologyPreflight {
+  std::size_t connected_components = 0;
+  std::size_t boundary_loops = 0;
+  std::int64_t euler_characteristic = 0;
+  std::optional<std::int64_t> total_genus;
 
-    bool manifold = false;
-    bool oriented = false;
-    bool triangular = false;
-    std::vector<std::string> failures;
+  bool manifold = false;
+  bool oriented = false;
+  bool triangular = false;
+  std::vector<std::string> failures;
 
-    bool ready() const;
+  bool ready() const;
 };
 
 RicciTopologyPreflight analyze_ricci_topology(
     geometrycentral::surface::SurfaceMesh& mesh);
 
-void print_ricci_topology_preflight(
-    const RicciTopologyPreflight& report,
-    std::ostream& output);
+void print_ricci_topology_preflight(const RicciTopologyPreflight& report,
+                                    std::ostream& output);
 
 void require_ricci_topology(const RicciTopologyPreflight& report);
 
-struct RicciGeometryThresholds
-{
-    double minimum_usable_quality = 1e-12;
-    double warning_quality = 0.2;
+struct RicciGeometryThresholds {
+  double minimum_usable_quality = 1e-12;
+  double warning_quality = 0.2;
 };
 
-struct RicciGeometryPreflight
-{
-    std::size_t nonfinite_vertices = 0;
-    std::size_t invalid_edges = 0;
-    std::size_t invalid_faces = 0;
-    std::size_t invalid_corners = 0;
-    std::size_t poor_quality_faces = 0;
+struct RicciGeometryPreflight {
+  std::size_t nonfinite_vertices = 0;
+  std::size_t invalid_edges = 0;
+  std::size_t invalid_faces = 0;
+  std::size_t invalid_corners = 0;
+  std::size_t poor_quality_faces = 0;
 
-    double minimum_edge_length = 0.0;
-    double maximum_edge_length = 0.0;
-    double minimum_face_area = 0.0;
-    double minimum_triangle_quality = 0.0;
-    double minimum_corner_angle_degrees = 0.0;
+  double minimum_edge_length = 0.0;
+  double maximum_edge_length = 0.0;
+  double minimum_face_area = 0.0;
+  double minimum_triangle_quality = 0.0;
+  double minimum_corner_angle_degrees = 0.0;
 
-    std::vector<std::string> failures;
-    std::vector<std::string> warnings;
+  std::vector<std::string> failures;
+  std::vector<std::string> warnings;
 
-    bool ready() const;
+  bool ready() const;
 };
 
 RicciGeometryPreflight analyze_ricci_geometry(
@@ -155,9 +151,8 @@ RicciGeometryPreflight analyze_ricci_geometry(
     geometrycentral::surface::VertexPositionGeometry& geometry,
     const RicciGeometryThresholds& thresholds = {});
 
-void print_ricci_geometry_preflight(
-    const RicciGeometryPreflight& report,
-    std::ostream& output);
+void print_ricci_geometry_preflight(const RicciGeometryPreflight& report,
+                                    std::ostream& output);
 
 void require_ricci_geometry(const RicciGeometryPreflight& report);
 ```
@@ -188,118 +183,95 @@ and has no handle/tunnel cuts, so it requires exactly one genus-zero component.
 
 namespace gcs = geometrycentral::surface;
 
-bool RicciTopologyPreflight::ready() const
-{
-    return failures.empty();
+bool RicciTopologyPreflight::ready() const {
+  return failures.empty();
 }
 
-RicciTopologyPreflight analyze_ricci_topology(gcs::SurfaceMesh& mesh)
-{
-    RicciTopologyPreflight report;
-    report.connected_components = mesh.nConnectedComponents();
-    report.boundary_loops = mesh.nBoundaryLoops();
-    // Geometry Central's manifold helper adds one face per boundary loop.
-    // Ricci Gauss--Bonnet instead needs the uncapped surface value V-E+F.
-    report.euler_characteristic =
-        static_cast<std::int64_t>(mesh.nVertices()) -
-        static_cast<std::int64_t>(mesh.nEdges()) +
-        static_cast<std::int64_t>(mesh.nFaces());
-    report.manifold = mesh.isManifold();
-    report.oriented = mesh.isOriented();
-    report.triangular = mesh.isTriangular();
+RicciTopologyPreflight analyze_ricci_topology(gcs::SurfaceMesh& mesh) {
+  RicciTopologyPreflight report;
+  report.connected_components = mesh.nConnectedComponents();
+  report.boundary_loops = mesh.nBoundaryLoops();
+  // Geometry Central's manifold helper adds one face per boundary loop.
+  // Ricci Gauss--Bonnet instead needs the uncapped surface value V-E+F.
+  report.euler_characteristic = static_cast<std::int64_t>(mesh.nVertices()) -
+                                static_cast<std::int64_t>(mesh.nEdges()) +
+                                static_cast<std::int64_t>(mesh.nFaces());
+  report.manifold = mesh.isManifold();
+  report.oriented = mesh.isOriented();
+  report.triangular = mesh.isTriangular();
 
-    if (!report.manifold)
-    {
-        report.failures.emplace_back(
-            "the mesh is not a combinatorial 2-manifold");
-    }
-    if (!report.oriented)
-    {
-        report.failures.emplace_back(
-            "the mesh does not have consistent face orientation");
-    }
-    if (!report.triangular)
-    {
-        report.failures.emplace_back(
-            "Ricci flow currently requires every face to be a triangle");
-    }
-    if (report.connected_components != 1)
-    {
-        report.failures.emplace_back(
-            "Ricci flattening requires exactly one connected component");
-    }
-    if (report.boundary_loops == 0)
-    {
-        report.failures.emplace_back(
-            "boundary flattening requires at least one boundary loop");
-    }
+  if (!report.manifold) {
+    report.failures.emplace_back("the mesh is not a combinatorial 2-manifold");
+  }
+  if (!report.oriented) {
+    report.failures.emplace_back(
+        "the mesh does not have consistent face orientation");
+  }
+  if (!report.triangular) {
+    report.failures.emplace_back(
+        "Ricci flow currently requires every face to be a triangle");
+  }
+  if (report.connected_components != 1) {
+    report.failures.emplace_back(
+        "Ricci flattening requires exactly one connected component");
+  }
+  if (report.boundary_loops == 0) {
+    report.failures.emplace_back(
+        "boundary flattening requires at least one boundary loop");
+  }
 
-    if (report.manifold && report.oriented)
-    {
-        const std::int64_t twice_genus =
-            2 * static_cast<std::int64_t>(report.connected_components) -
-            static_cast<std::int64_t>(report.boundary_loops) -
-            report.euler_characteristic;
+  if (report.manifold && report.oriented) {
+    const std::int64_t twice_genus =
+        2 * static_cast<std::int64_t>(report.connected_components) -
+        static_cast<std::int64_t>(report.boundary_loops) -
+        report.euler_characteristic;
 
-        if (twice_genus < 0 || twice_genus % 2 != 0)
-        {
-            report.failures.emplace_back(
-                "mesh counts are inconsistent with an orientable surface");
-        }
-        else
-        {
-            report.total_genus = twice_genus / 2;
-            if (*report.total_genus != 0)
-            {
-                report.failures.emplace_back(
-                    "the current cut graph supports genus-zero surfaces only");
-            }
-        }
+    if (twice_genus < 0 || twice_genus % 2 != 0) {
+      report.failures.emplace_back(
+          "mesh counts are inconsistent with an orientable surface");
+    } else {
+      report.total_genus = twice_genus / 2;
+      if (*report.total_genus != 0) {
+        report.failures.emplace_back(
+            "the current cut graph supports genus-zero surfaces only");
+      }
     }
+  }
 
-    return report;
+  return report;
 }
 
-void print_ricci_topology_preflight(
-    const RicciTopologyPreflight& report,
-    std::ostream& output)
-{
-    output << "Ricci topology preflight: "
-           << (report.ready() ? "ready" : "not ready") << '\n'
-           << "  connected components: " << report.connected_components << '\n'
-           << "  boundary loops: " << report.boundary_loops << '\n'
-           << "  Euler characteristic: " << report.euler_characteristic << '\n'
-           << "  total genus: ";
-    if (report.total_genus)
-    {
-        output << *report.total_genus;
-    }
-    else
-    {
-        output << "undetermined";
-    }
-    output << '\n';
+void print_ricci_topology_preflight(const RicciTopologyPreflight& report,
+                                    std::ostream& output) {
+  output << "Ricci topology preflight: "
+         << (report.ready() ? "ready" : "not ready") << '\n'
+         << "  connected components: " << report.connected_components << '\n'
+         << "  boundary loops: " << report.boundary_loops << '\n'
+         << "  Euler characteristic: " << report.euler_characteristic << '\n'
+         << "  total genus: ";
+  if (report.total_genus) {
+    output << *report.total_genus;
+  } else {
+    output << "undetermined";
+  }
+  output << '\n';
 
-    for (const std::string& failure : report.failures)
-    {
-        output << "  failed: " << failure << '\n';
-    }
+  for (const std::string& failure : report.failures) {
+    output << "  failed: " << failure << '\n';
+  }
 }
 
-void require_ricci_topology(const RicciTopologyPreflight& report)
-{
-    if (report.ready())
-    {
-        return;
-    }
+void require_ricci_topology(const RicciTopologyPreflight& report) {
+  if (report.ready()) {
+    return;
+  }
 
-    std::ostringstream message;
-    message << "Ricci topology preflight failed";
-    for (const std::string& failure : report.failures)
-    {
-        message << "\n- " << failure;
-    }
-    throw std::runtime_error(message.str());
+  std::ostringstream message;
+  message << "Ricci topology preflight failed";
+  for (const std::string& failure : report.failures) {
+    message << "\n- " << failure;
+  }
+  throw std::runtime_error(message.str());
 }
 ```
 
@@ -346,216 +318,169 @@ namespace {
 constexpr double pi = 3.141592653589793238462643383279502884;
 constexpr double radians_to_degrees = 180.0 / pi;
 
-std::string count_message(std::size_t count, const std::string& description)
-{
-    return std::to_string(count) + " " + description;
+std::string count_message(std::size_t count, const std::string& description) {
+  return std::to_string(count) + " " + description;
 }
-}
+}  // namespace
 
-bool RicciGeometryPreflight::ready() const
-{
-    return failures.empty();
+bool RicciGeometryPreflight::ready() const {
+  return failures.empty();
 }
 
 RicciGeometryPreflight analyze_ricci_geometry(
     gcs::SurfaceMesh& mesh,
     gcs::VertexPositionGeometry& geometry,
-    const RicciGeometryThresholds& thresholds)
-{
-    if (!std::isfinite(thresholds.minimum_usable_quality) ||
-        !std::isfinite(thresholds.warning_quality) ||
-        thresholds.minimum_usable_quality <= 0.0 ||
-        thresholds.warning_quality < thresholds.minimum_usable_quality ||
-        thresholds.warning_quality > 1.0)
-    {
-        throw std::invalid_argument(
-            "triangle-quality thresholds must satisfy "
-            "0 < minimum usable <= warning <= 1");
+    const RicciGeometryThresholds& thresholds) {
+  if (!std::isfinite(thresholds.minimum_usable_quality) ||
+      !std::isfinite(thresholds.warning_quality) ||
+      thresholds.minimum_usable_quality <= 0.0 ||
+      thresholds.warning_quality < thresholds.minimum_usable_quality ||
+      thresholds.warning_quality > 1.0) {
+    throw std::invalid_argument(
+        "triangle-quality thresholds must satisfy "
+        "0 < minimum usable <= warning <= 1");
+  }
+
+  RicciGeometryPreflight report;
+  report.minimum_edge_length = std::numeric_limits<double>::infinity();
+  report.minimum_face_area = std::numeric_limits<double>::infinity();
+  report.minimum_triangle_quality = std::numeric_limits<double>::infinity();
+  report.minimum_corner_angle_degrees = std::numeric_limits<double>::infinity();
+
+  for (gcs::Vertex vertex : mesh.vertices()) {
+    if (!geometry.vertexPositions[vertex].isFinite()) {
+      ++report.nonfinite_vertices;
     }
+  }
 
-    RicciGeometryPreflight report;
-    report.minimum_edge_length = std::numeric_limits<double>::infinity();
-    report.minimum_face_area = std::numeric_limits<double>::infinity();
-    report.minimum_triangle_quality =
-        std::numeric_limits<double>::infinity();
-    report.minimum_corner_angle_degrees =
-        std::numeric_limits<double>::infinity();
-
-    for (gcs::Vertex vertex : mesh.vertices())
-    {
-        if (!geometry.vertexPositions[vertex].isFinite())
-        {
-            ++report.nonfinite_vertices;
-        }
-    }
-
-    if (report.nonfinite_vertices != 0)
-    {
-        report.failures.push_back(count_message(
-            report.nonfinite_vertices,
-            "vertices have non-finite coordinates"));
-        return report;
-    }
-
-    if (!mesh.isTriangular())
-    {
-        report.failures.emplace_back(
-            "geometric triangle checks require a triangular mesh");
-        return report;
-    }
-
-    geometry.requireEdgeLengths();
-    geometry.requireFaceAreas();
-    geometry.requireCornerAngles();
-
-    for (gcs::Edge edge : mesh.edges())
-    {
-        const double length = geometry.edgeLengths[edge];
-        if (!std::isfinite(length) || length <= 0.0)
-        {
-            ++report.invalid_edges;
-            continue;
-        }
-        report.minimum_edge_length =
-            std::min(report.minimum_edge_length, length);
-        report.maximum_edge_length =
-            std::max(report.maximum_edge_length, length);
-    }
-
-    for (gcs::Face face : mesh.faces())
-    {
-        const double area = geometry.faceAreas[face];
-        double squared_length_sum = 0.0;
-        for (gcs::Edge edge : face.adjacentEdges())
-        {
-            const double length = geometry.edgeLengths[edge];
-            squared_length_sum += length * length;
-        }
-
-        if (!std::isfinite(area) || area <= 0.0 ||
-            !std::isfinite(squared_length_sum) ||
-            squared_length_sum <= 0.0)
-        {
-            ++report.invalid_faces;
-            continue;
-        }
-
-        report.minimum_face_area =
-            std::min(report.minimum_face_area, area);
-        const double quality =
-            4.0 * std::sqrt(3.0) * area / squared_length_sum;
-        report.minimum_triangle_quality =
-            std::min(report.minimum_triangle_quality, quality);
-
-        if (!std::isfinite(quality) ||
-            quality <= thresholds.minimum_usable_quality)
-        {
-            ++report.invalid_faces;
-        }
-        else if (quality < thresholds.warning_quality)
-        {
-            ++report.poor_quality_faces;
-        }
-
-        for (gcs::Corner corner : face.adjacentCorners())
-        {
-            const double angle = geometry.cornerAngles[corner];
-            if (!std::isfinite(angle) || angle <= 0.0 || angle >= pi)
-            {
-                ++report.invalid_corners;
-                continue;
-            }
-            report.minimum_corner_angle_degrees = std::min(
-                report.minimum_corner_angle_degrees,
-                angle * radians_to_degrees);
-        }
-    }
-
-    geometry.unrequireCornerAngles();
-    geometry.unrequireFaceAreas();
-    geometry.unrequireEdgeLengths();
-
-    if (report.invalid_edges != 0)
-    {
-        report.failures.push_back(count_message(
-            report.invalid_edges,
-            "edges have zero or non-finite length"));
-    }
-    if (report.invalid_faces != 0)
-    {
-        report.failures.push_back(count_message(
-            report.invalid_faces,
-            "triangles are geometrically degenerate"));
-    }
-    if (report.invalid_corners != 0)
-    {
-        report.failures.push_back(count_message(
-            report.invalid_corners,
-            "triangle corners have invalid angles"));
-    }
-    if (report.poor_quality_faces != 0)
-    {
-        report.warnings.push_back(count_message(
-            report.poor_quality_faces,
-            "triangles have quality below the recommended threshold"));
-    }
-
+  if (report.nonfinite_vertices != 0) {
+    report.failures.push_back(count_message(
+        report.nonfinite_vertices, "vertices have non-finite coordinates"));
     return report;
+  }
+
+  if (!mesh.isTriangular()) {
+    report.failures.emplace_back(
+        "geometric triangle checks require a triangular mesh");
+    return report;
+  }
+
+  geometry.requireEdgeLengths();
+  geometry.requireFaceAreas();
+  geometry.requireCornerAngles();
+
+  for (gcs::Edge edge : mesh.edges()) {
+    const double length = geometry.edgeLengths[edge];
+    if (!std::isfinite(length) || length <= 0.0) {
+      ++report.invalid_edges;
+      continue;
+    }
+    report.minimum_edge_length = std::min(report.minimum_edge_length, length);
+    report.maximum_edge_length = std::max(report.maximum_edge_length, length);
+  }
+
+  for (gcs::Face face : mesh.faces()) {
+    const double area = geometry.faceAreas[face];
+    double squared_length_sum = 0.0;
+    for (gcs::Edge edge : face.adjacentEdges()) {
+      const double length = geometry.edgeLengths[edge];
+      squared_length_sum += length * length;
+    }
+
+    if (!std::isfinite(area) || area <= 0.0 ||
+        !std::isfinite(squared_length_sum) || squared_length_sum <= 0.0) {
+      ++report.invalid_faces;
+      continue;
+    }
+
+    report.minimum_face_area = std::min(report.minimum_face_area, area);
+    const double quality = 4.0 * std::sqrt(3.0) * area / squared_length_sum;
+    report.minimum_triangle_quality =
+        std::min(report.minimum_triangle_quality, quality);
+
+    if (!std::isfinite(quality) ||
+        quality <= thresholds.minimum_usable_quality) {
+      ++report.invalid_faces;
+    } else if (quality < thresholds.warning_quality) {
+      ++report.poor_quality_faces;
+    }
+
+    for (gcs::Corner corner : face.adjacentCorners()) {
+      const double angle = geometry.cornerAngles[corner];
+      if (!std::isfinite(angle) || angle <= 0.0 || angle >= pi) {
+        ++report.invalid_corners;
+        continue;
+      }
+      report.minimum_corner_angle_degrees = std::min(
+          report.minimum_corner_angle_degrees, angle * radians_to_degrees);
+    }
+  }
+
+  geometry.unrequireCornerAngles();
+  geometry.unrequireFaceAreas();
+  geometry.unrequireEdgeLengths();
+
+  if (report.invalid_edges != 0) {
+    report.failures.push_back(count_message(
+        report.invalid_edges, "edges have zero or non-finite length"));
+  }
+  if (report.invalid_faces != 0) {
+    report.failures.push_back(count_message(
+        report.invalid_faces, "triangles are geometrically degenerate"));
+  }
+  if (report.invalid_corners != 0) {
+    report.failures.push_back(count_message(
+        report.invalid_corners, "triangle corners have invalid angles"));
+  }
+  if (report.poor_quality_faces != 0) {
+    report.warnings.push_back(count_message(
+        report.poor_quality_faces,
+        "triangles have quality below the recommended threshold"));
+  }
+
+  return report;
 }
 
-void print_ricci_geometry_preflight(
-    const RicciGeometryPreflight& report,
-    std::ostream& output)
-{
-    output << "Ricci geometry preflight: "
-           << (report.ready() ? "ready" : "not ready") << '\n';
+void print_ricci_geometry_preflight(const RicciGeometryPreflight& report,
+                                    std::ostream& output) {
+  output << "Ricci geometry preflight: "
+         << (report.ready() ? "ready" : "not ready") << '\n';
 
-    if (std::isfinite(report.minimum_edge_length))
-    {
-        output << "  edge length range: [" << report.minimum_edge_length
-               << ", " << report.maximum_edge_length << "]\n";
-    }
-    if (std::isfinite(report.minimum_face_area))
-    {
-        output << "  minimum triangle area: "
-               << report.minimum_face_area << '\n';
-    }
-    if (std::isfinite(report.minimum_triangle_quality))
-    {
-        output << "  minimum triangle quality: "
-               << report.minimum_triangle_quality
-               << " (1 is equilateral)\n";
-    }
-    if (std::isfinite(report.minimum_corner_angle_degrees))
-    {
-        output << "  minimum corner angle: "
-               << report.minimum_corner_angle_degrees << " degrees\n";
-    }
+  if (std::isfinite(report.minimum_edge_length)) {
+    output << "  edge length range: [" << report.minimum_edge_length << ", "
+           << report.maximum_edge_length << "]\n";
+  }
+  if (std::isfinite(report.minimum_face_area)) {
+    output << "  minimum triangle area: " << report.minimum_face_area << '\n';
+  }
+  if (std::isfinite(report.minimum_triangle_quality)) {
+    output << "  minimum triangle quality: " << report.minimum_triangle_quality
+           << " (1 is equilateral)\n";
+  }
+  if (std::isfinite(report.minimum_corner_angle_degrees)) {
+    output << "  minimum corner angle: " << report.minimum_corner_angle_degrees
+           << " degrees\n";
+  }
 
-    for (const std::string& failure : report.failures)
-    {
-        output << "  failed: " << failure << '\n';
-    }
-    for (const std::string& warning : report.warnings)
-    {
-        output << "  warning: " << warning << '\n';
-    }
+  for (const std::string& failure : report.failures) {
+    output << "  failed: " << failure << '\n';
+  }
+  for (const std::string& warning : report.warnings) {
+    output << "  warning: " << warning << '\n';
+  }
 }
 
-void require_ricci_geometry(const RicciGeometryPreflight& report)
-{
-    if (report.ready())
-    {
-        return;
-    }
+void require_ricci_geometry(const RicciGeometryPreflight& report) {
+  if (report.ready()) {
+    return;
+  }
 
-    std::ostringstream message;
-    message << "Ricci geometry preflight failed";
-    for (const std::string& failure : report.failures)
-    {
-        message << "\n- " << failure;
-    }
-    throw std::runtime_error(message.str());
+  std::ostringstream message;
+  message << "Ricci geometry preflight failed";
+  for (const std::string& failure : report.failures) {
+    message << "\n- " << failure;
+  }
+  throw std::runtime_error(message.str());
 }
 ```
 
@@ -571,8 +496,8 @@ emphasize that "more than one boundary" does not mean "positive genus."
 #include "geometrycentral/surface/manifold_surface_mesh.h"
 #include "geometrycentral/surface/vertex_position_geometry.h"
 
-#include <cstdlib>
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <limits>
 #include <string>
@@ -583,121 +508,104 @@ emphasize that "more than one boundary" does not mean "positive genus."
 namespace gcs = geometrycentral::surface;
 
 namespace {
-void expect(bool condition, const std::string& explanation)
-{
-    if (!condition)
-    {
-        std::cerr << "Preflight example failed: " << explanation << '\n';
-        std::exit(EXIT_FAILURE);
-    }
+void expect(bool condition, const std::string& explanation) {
+  if (!condition) {
+    std::cerr << "Preflight example failed: " << explanation << '\n';
+    std::exit(EXIT_FAILURE);
+  }
 }
 
 gcs::ManifoldSurfaceMesh make_mesh(
-    const std::vector<std::vector<std::size_t>>& faces)
-{
-    return gcs::ManifoldSurfaceMesh(faces);
+    const std::vector<std::vector<std::size_t>>& faces) {
+  return gcs::ManifoldSurfaceMesh(faces);
 }
-}
+}  // namespace
 
-int main()
-{
-    auto disk = make_mesh({{0, 1, 2}});
-    const RicciTopologyPreflight disk_report =
-        analyze_ricci_topology(disk);
-    expect(disk_report.ready(), "a triangular disk should be accepted");
-    expect(disk_report.euler_characteristic == 1, "a disk has chi = 1");
-    expect(disk_report.boundary_loops == 1, "a disk has one boundary");
-    expect(disk_report.total_genus == 0, "a disk has genus zero");
+int main() {
+  auto disk = make_mesh({{0, 1, 2}});
+  const RicciTopologyPreflight disk_report = analyze_ricci_topology(disk);
+  expect(disk_report.ready(), "a triangular disk should be accepted");
+  expect(disk_report.euler_characteristic == 1, "a disk has chi = 1");
+  expect(disk_report.boundary_loops == 1, "a disk has one boundary");
+  expect(disk_report.total_genus == 0, "a disk has genus zero");
 
-    auto annulus = make_mesh({
-        {0, 1, 5}, {0, 5, 4},
-        {1, 2, 6}, {1, 6, 5},
-        {2, 3, 7}, {2, 7, 6},
-        {3, 0, 4}, {3, 4, 7},
-    });
-    const RicciTopologyPreflight annulus_report =
-        analyze_ricci_topology(annulus);
-    expect(annulus_report.ready(), "a triangular annulus should be accepted");
-    expect(annulus_report.euler_characteristic == 0, "an annulus has chi = 0");
-    expect(annulus_report.boundary_loops == 2,
-           "an annulus has two boundary loops");
-    expect(annulus_report.total_genus == 0, "an annulus has genus zero");
+  auto annulus = make_mesh({
+      {0, 1, 5},
+      {0, 5, 4},
+      {1, 2, 6},
+      {1, 6, 5},
+      {2, 3, 7},
+      {2, 7, 6},
+      {3, 0, 4},
+      {3, 4, 7},
+  });
+  const RicciTopologyPreflight annulus_report = analyze_ricci_topology(annulus);
+  expect(annulus_report.ready(), "a triangular annulus should be accepted");
+  expect(annulus_report.euler_characteristic == 0, "an annulus has chi = 0");
+  expect(annulus_report.boundary_loops == 2,
+         "an annulus has two boundary loops");
+  expect(annulus_report.total_genus == 0, "an annulus has genus zero");
 
-    auto disconnected = make_mesh({{0, 1, 2}, {3, 4, 5}});
-    expect(!analyze_ricci_topology(disconnected).ready(),
-           "two disconnected disks should be rejected");
+  auto disconnected = make_mesh({{0, 1, 2}, {3, 4, 5}});
+  expect(!analyze_ricci_topology(disconnected).ready(),
+         "two disconnected disks should be rejected");
 
-    auto closed_tetrahedron = make_mesh({
-        {0, 2, 1},
-        {0, 1, 3},
-        {1, 2, 3},
-        {2, 0, 3},
-    });
-    expect(!analyze_ricci_topology(closed_tetrahedron).ready(),
-           "the boundary flattener should reject a closed sphere");
+  auto closed_tetrahedron = make_mesh({
+      {0, 2, 1},
+      {0, 1, 3},
+      {1, 2, 3},
+      {2, 0, 3},
+  });
+  expect(!analyze_ricci_topology(closed_tetrahedron).ready(),
+         "the boundary flattener should reject a closed sphere");
 
-    auto quadrilateral = make_mesh({{0, 1, 2, 3}});
-    expect(!analyze_ricci_topology(quadrilateral).ready(),
-           "the current Ricci solver should reject polygonal faces");
+  auto quadrilateral = make_mesh({{0, 1, 2, 3}});
+  expect(!analyze_ricci_topology(quadrilateral).ready(),
+         "the current Ricci solver should reject polygonal faces");
 
-    Eigen::Matrix<double, 3, 3> equilateral_positions;
-    equilateral_positions <<
-        0.0, 0.0, 0.0,
-        1.0, 0.0, 0.0,
-        0.5, std::sqrt(3.0) / 2.0, 0.0;
-    gcs::VertexPositionGeometry equilateral_geometry(
-        disk, equilateral_positions);
-    const RicciGeometryPreflight equilateral_report =
-        analyze_ricci_geometry(disk, equilateral_geometry);
-    expect(equilateral_report.ready(),
-           "an equilateral triangle should be geometrically valid");
-    expect(std::abs(equilateral_report.minimum_triangle_quality - 1.0) <
-               1e-12,
-           "an equilateral triangle should have quality one");
-    expect(equilateral_report.warnings.empty(),
-           "an equilateral triangle should have no quality warning");
+  Eigen::Matrix<double, 3, 3> equilateral_positions;
+  equilateral_positions << 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.5,
+      std::sqrt(3.0) / 2.0, 0.0;
+  gcs::VertexPositionGeometry equilateral_geometry(disk, equilateral_positions);
+  const RicciGeometryPreflight equilateral_report =
+      analyze_ricci_geometry(disk, equilateral_geometry);
+  expect(equilateral_report.ready(),
+         "an equilateral triangle should be geometrically valid");
+  expect(std::abs(equilateral_report.minimum_triangle_quality - 1.0) < 1e-12,
+         "an equilateral triangle should have quality one");
+  expect(equilateral_report.warnings.empty(),
+         "an equilateral triangle should have no quality warning");
 
-    Eigen::Matrix<double, 3, 3> scaled_positions =
-        1000.0 * equilateral_positions;
-    gcs::VertexPositionGeometry scaled_geometry(disk, scaled_positions);
-    const RicciGeometryPreflight scaled_report =
-        analyze_ricci_geometry(disk, scaled_geometry);
-    expect(std::abs(scaled_report.minimum_triangle_quality -
-                    equilateral_report.minimum_triangle_quality) < 1e-12,
-           "uniform scaling should not change triangle quality");
+  Eigen::Matrix<double, 3, 3> scaled_positions = 1000.0 * equilateral_positions;
+  gcs::VertexPositionGeometry scaled_geometry(disk, scaled_positions);
+  const RicciGeometryPreflight scaled_report =
+      analyze_ricci_geometry(disk, scaled_geometry);
+  expect(std::abs(scaled_report.minimum_triangle_quality -
+                  equilateral_report.minimum_triangle_quality) < 1e-12,
+         "uniform scaling should not change triangle quality");
 
-    Eigen::Matrix<double, 3, 3> skinny_positions;
-    skinny_positions <<
-        0.0, 0.0, 0.0,
-        1.0, 0.0, 0.0,
-        1e-8, 1e-8, 0.0;
-    gcs::VertexPositionGeometry skinny_geometry(disk, skinny_positions);
-    const RicciGeometryPreflight skinny_report =
-        analyze_ricci_geometry(disk, skinny_geometry);
-    expect(skinny_report.ready(),
-           "a skinny but nondegenerate triangle should remain usable");
-    expect(!skinny_report.warnings.empty(),
-           "a skinny triangle should produce a quality warning");
+  Eigen::Matrix<double, 3, 3> skinny_positions;
+  skinny_positions << 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1e-8, 1e-8, 0.0;
+  gcs::VertexPositionGeometry skinny_geometry(disk, skinny_positions);
+  const RicciGeometryPreflight skinny_report =
+      analyze_ricci_geometry(disk, skinny_geometry);
+  expect(skinny_report.ready(),
+         "a skinny but nondegenerate triangle should remain usable");
+  expect(!skinny_report.warnings.empty(),
+         "a skinny triangle should produce a quality warning");
 
-    Eigen::Matrix<double, 3, 3> collinear_positions;
-    collinear_positions <<
-        0.0, 0.0, 0.0,
-        1.0, 0.0, 0.0,
-        2.0, 0.0, 0.0;
-    gcs::VertexPositionGeometry collinear_geometry(
-        disk, collinear_positions);
-    expect(!analyze_ricci_geometry(disk, collinear_geometry).ready(),
-           "a zero-area triangle should be rejected");
+  Eigen::Matrix<double, 3, 3> collinear_positions;
+  collinear_positions << 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 2.0, 0.0, 0.0;
+  gcs::VertexPositionGeometry collinear_geometry(disk, collinear_positions);
+  expect(!analyze_ricci_geometry(disk, collinear_geometry).ready(),
+         "a zero-area triangle should be rejected");
 
-    Eigen::Matrix<double, 3, 3> nonfinite_positions =
-        equilateral_positions;
-    nonfinite_positions(2, 1) =
-        std::numeric_limits<double>::quiet_NaN();
-    gcs::VertexPositionGeometry nonfinite_geometry(
-        disk, nonfinite_positions);
-    expect(!analyze_ricci_geometry(disk, nonfinite_geometry).ready(),
-           "a non-finite vertex coordinate should be rejected");
+  Eigen::Matrix<double, 3, 3> nonfinite_positions = equilateral_positions;
+  nonfinite_positions(2, 1) = std::numeric_limits<double>::quiet_NaN();
+  gcs::VertexPositionGeometry nonfinite_geometry(disk, nonfinite_positions);
+  expect(!analyze_ricci_geometry(disk, nonfinite_geometry).ready(),
+         "a non-finite vertex coordinate should be rejected");
 
-    return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }
 ```

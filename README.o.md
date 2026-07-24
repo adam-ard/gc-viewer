@@ -17,10 +17,10 @@ are not found. To use installed packages instead, configure with
 
 ## Build
 
-Format all generated C++ sources and headers after tangling:
+Format all generated C++ sources, headers, and tests after tangling:
 
 ```bash {name=format menu=true}
-find src -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) \
+find src tests -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) \
     -exec clang-format -i {} +
 ```
 

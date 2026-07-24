@@ -37,10 +37,9 @@ the lifetime of `main()`, so this small model does not need to copy or own the
 path.
 
 ```cpp {name=cmdline-option-model}
-struct Options
-{
-    const char* mesh = nullptr;
-    bool require_manifold = true;
+struct Options {
+  const char* mesh = nullptr;
+  bool require_manifold = true;
 };
 ```
 
@@ -50,13 +49,12 @@ Angle brackets in the synopsis mark the mesh as required. Square brackets mark
 the options as optional.
 
 ```cpp {name=cmdline-usage-def}
-void print_usage(const char* program)
-{
-    std::cerr << "Usage:\n  " << program << " [options] <mesh>\n\n"
-              << "Options:\n"
-              << "  --nonmanifold    Ignore manifold requirement when loading "
-                 "the mesh\n"
-              << "  -h, --help       Show this help text\n";
+void print_usage(const char* program) {
+  std::cerr << "Usage:\n  " << program << " [options] <mesh>\n\n"
+            << "Options:\n"
+            << "  --nonmanifold    Ignore manifold requirement when loading "
+               "the mesh\n"
+            << "  -h, --help       Show this help text\n";
 }
 ```
 
@@ -68,36 +66,27 @@ is an error because the viewer operates on one mesh at a time. Help and
 expected input errors are resolved locally before the geometry pipeline starts.
 
 ```cpp {name=cmdline-parser-def}
-Options parse_options(int argc, char** argv)
-{
-    Options options;
+Options parse_options(int argc, char** argv) {
+  Options options;
 
-    for (int i = 1; i < argc; ++i)
-    {
-        const std::string arg = argv[i];
+  for (int i = 1; i < argc; ++i) {
+    const std::string arg = argv[i];
 
-        if (arg == "--nonmanifold")
-        {
-            options.require_manifold = false;
-        }
-        else if (arg == "-h" || arg == "--help")
-        {
-            print_usage(argv[0]);
-            std::exit(EXIT_SUCCESS);
-        }
-        else if (!options.mesh)
-        {
-            options.mesh = argv[i];
-        }
-        else
-        {
-            std::cerr << "Unexpected argument: " << arg << '\n';
-            print_usage(argv[0]);
-            std::exit(EXIT_FAILURE);
-        }
+    if (arg == "--nonmanifold") {
+      options.require_manifold = false;
+    } else if (arg == "-h" || arg == "--help") {
+      print_usage(argv[0]);
+      std::exit(EXIT_SUCCESS);
+    } else if (!options.mesh) {
+      options.mesh = argv[i];
+    } else {
+      std::cerr << "Unexpected argument: " << arg << '\n';
+      print_usage(argv[0]);
+      std::exit(EXIT_FAILURE);
     }
+  }
 
-    return options;
+  return options;
 }
 ```
 
@@ -109,9 +98,8 @@ before the viewer pipeline begins, allowing later sections to use
 
 ```cpp {name=handle-cmdline}
 const Options options = parse_options(argc, argv);
-if (!options.mesh)
-{
-    print_usage(argv[0]);
-    return EXIT_FAILURE;
+if (!options.mesh) {
+  print_usage(argv[0]);
+  return EXIT_FAILURE;
 }
 ```
