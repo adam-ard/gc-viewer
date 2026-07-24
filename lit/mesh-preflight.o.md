@@ -32,22 +32,22 @@ connected.
 
 For a finite surface mesh,
 
-\[
+$$
     \chi = V-E+F.
-\]
+$$
 
-For an orientable surface with \(c\) connected components, \(b\) boundary
-loops, and total genus \(g\),
+For an orientable surface with $c$ connected components, $b$ boundary
+loops, and total genus $g$,
 
-\[
+$$
     \chi = 2c-2g-b.
-\]
+$$
 
 Consequently,
 
-\[
+$$
     2g = 2c-b-\chi.
-\]
+$$
 
 This relation does two jobs for us.  It identifies positive-genus inputs that
 need handle and tunnel cuts not yet implemented, and it acts as a consistency
@@ -63,14 +63,14 @@ enumeration, and all element counts to Geometry Central.
 
 The pinned Geometry Central revision uses a different Euler-characteristic
 convention in `ManifoldSurfaceMesh::eulerCharacteristic()`: it evaluates
-\(V-E+F+b\), as though every boundary loop had been capped by a face.  The
+$V-E+F+b$, as though every boundary loop had been capped by a face.  The
 Ricci-flow Gauss--Bonnet condition and the classification formula above require
-the uncapped surface value \(V-E+F\).  Moreover, the corresponding library
+the uncapped surface value $V-E+F$.  Moreover, the corresponding library
 `genus()` helper is not suitable for an open, multiply connected surface; for
 example, it reports a negative value for an annulus.
 
-We therefore use Geometry Central to obtain \(V\), \(E\), \(F\), \(b\), and
-\(c\), but perform the final two lines of integer arithmetic ourselves.  This
+We therefore use Geometry Central to obtain $V$, $E$, $F$, $b$, and
+$c$, but perform the final two lines of integer arithmetic ourselves.  This
 is a semantic adapter, not a second mesh-topology implementation.  If a future
 Geometry Central revision adds an explicitly boundary-aware genus routine, this
 is the one calculation that should be replaced.
@@ -310,7 +310,7 @@ layer of the Step 1 preflight.
 # Geometric Preflight
 
 Topology describes which vertices and faces are connected. Geometry assigns a
-point in \(\mathbb{R}^3\) to each vertex and therefore gives every edge a
+point in $\mathbb{R}^3$ to each vertex and therefore gives every edge a
 length, every triangle an area, and every corner an angle. The Ricci solver
 needs these quantities to define its initial metric.
 
@@ -318,12 +318,12 @@ needs these quantities to define its initial metric.
 
 Absolute area alone is not a useful quality criterion: an otherwise identical
 mesh expressed in millimeters has areas one million times larger than when it
-is expressed in meters. For a triangle with area \(A\) and edge lengths
-\(a,b,c\), we use
+is expressed in meters. For a triangle with area $A$ and edge lengths
+$a,b,c$, we use
 
-\[
+$$
     q = \frac{4\sqrt{3}A}{a^2+b^2+c^2}.
-\]
+$$
 
 This value is 1 for an equilateral triangle, approaches 0 as a triangle
 collapses, and does not change under uniform scaling. A value below
