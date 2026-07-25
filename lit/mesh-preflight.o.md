@@ -1,4 +1,4 @@
-# Ricci-Flow Topology Preflight
+# Ricci-Flow Mesh Preflight
 
 The paper's first step asks for a *feature-aware, computation-safe
 triangulation*.  "Computation-safe" is broader than "manifold": it includes
@@ -14,6 +14,8 @@ and architecturally.  A topologically valid mesh can still contain a nearly
 zero-area triangle, while a geometrically beautiful mesh can still contain a
 nonmanifold edge.  The two failures need different explanations and different
 repairs.
+
+# Topological Preflight
 
 ## What the manifold loader establishes
 
@@ -75,7 +77,7 @@ is a semantic adapter, not a second mesh-topology implementation.  If a future
 Geometry Central revision adds an explicitly boundary-aware genus routine, this
 is the one calculation that should be replaced.
 
-## Public report
+## Public interface
 
 A preflight returns data rather than merely throwing an exception.  The viewer
 can teach the user *why* a mesh was rejected, and future UI work can display
@@ -84,6 +86,9 @@ every failed condition at once.
 ```cpp {name=mesh-preflight-interface-includes}
 "mesh_preflight.h"
 ```
+
+The tangled header is an outline of those two layers. Their declarations live
+beside the concepts they express below.
 
 ```cpp {name=mesh-preflight-header tangle=src/mesh_preflight.h}
 #pragma once
@@ -100,6 +105,19 @@ class SurfaceMesh;
 class VertexPositionGeometry;
 }  // namespace geometrycentral::surface
 
+@<topology-preflight-interface@>
+
+@<geometry-preflight-interface@>
+```
+
+### Topological report and policy
+
+The topology report records both the invariants and every failed condition.
+`analyze_ricci_topology()` gathers that evidence, `print_ricci_topology_preflight()`
+explains it, and `require_ricci_topology()` turns an unacceptable report into a
+hard boundary for code that requires a flattenable mesh.
+
+```cpp {name=topology-preflight-interface}
 struct RicciTopologyPreflight {
   std::size_t connected_components = 0;
   std::size_t boundary_loops = 0;
@@ -121,40 +139,6 @@ void print_ricci_topology_preflight(const RicciTopologyPreflight& report,
                                     std::ostream& output);
 
 void require_ricci_topology(const RicciTopologyPreflight& report);
-
-struct RicciGeometryThresholds {
-  double minimum_usable_quality = 1e-12;
-  double warning_quality = 0.2;
-};
-
-struct RicciGeometryPreflight {
-  std::size_t nonfinite_vertices = 0;
-  std::size_t invalid_edges = 0;
-  std::size_t invalid_faces = 0;
-  std::size_t invalid_corners = 0;
-  std::size_t poor_quality_faces = 0;
-
-  double minimum_edge_length = 0.0;
-  double maximum_edge_length = 0.0;
-  double minimum_face_area = 0.0;
-  double minimum_triangle_quality = 0.0;
-  double minimum_corner_angle_degrees = 0.0;
-
-  std::vector<std::string> failures;
-  std::vector<std::string> warnings;
-
-  bool ready() const;
-};
-
-RicciGeometryPreflight analyze_ricci_geometry(
-    geometrycentral::surface::SurfaceMesh& mesh,
-    geometrycentral::surface::VertexPositionGeometry& geometry,
-    const RicciGeometryThresholds& thresholds = {});
-
-void print_ricci_geometry_preflight(const RicciGeometryPreflight& report,
-                                    std::ostream& output);
-
-void require_ricci_geometry(const RicciGeometryPreflight& report);
 ```
 
 The implementation is split into topology and geometry fragments below. A
@@ -307,6 +291,53 @@ ratios.
 Geometry Central computes the metric quantities. The application only applies
 the policy thresholds.
 
+## Geometric report and policy
+
+The geometric layer follows the same evidence-first design. Its thresholds
+separate triangles that are unusable from triangles that are merely poor
+quality; its report likewise separates failures from warnings.
+
+`VertexPositionGeometry` belongs to one particular `SurfaceMesh`. The analyzer
+accepts both explicitly because it traverses the mesh while asking the geometry
+for metric quantities. It therefore verifies that both references describe the
+same mesh before doing any work.
+
+```cpp {name=geometry-preflight-interface}
+struct RicciGeometryThresholds {
+  double minimum_usable_quality = 1e-12;
+  double warning_quality = 0.2;
+};
+
+struct RicciGeometryPreflight {
+  std::size_t nonfinite_vertices = 0;
+  std::size_t invalid_edges = 0;
+  std::size_t invalid_faces = 0;
+  std::size_t invalid_corners = 0;
+  std::size_t poor_quality_faces = 0;
+
+  double minimum_edge_length = 0.0;
+  double maximum_edge_length = 0.0;
+  double minimum_face_area = 0.0;
+  double minimum_triangle_quality = 0.0;
+  double minimum_corner_angle_degrees = 0.0;
+
+  std::vector<std::string> failures;
+  std::vector<std::string> warnings;
+
+  bool ready() const;
+};
+
+RicciGeometryPreflight analyze_ricci_geometry(
+    geometrycentral::surface::SurfaceMesh& mesh,
+    geometrycentral::surface::VertexPositionGeometry& geometry,
+    const RicciGeometryThresholds& thresholds = {});
+
+void print_ricci_geometry_preflight(const RicciGeometryPreflight& report,
+                                    std::ostream& output);
+
+void require_ricci_geometry(const RicciGeometryPreflight& report);
+```
+
 ```cpp {name=mesh-preflight-geometry-source}
 #include "geometrycentral/surface/vertex_position_geometry.h"
 
@@ -331,6 +362,11 @@ RicciGeometryPreflight analyze_ricci_geometry(
     gcs::SurfaceMesh& mesh,
     gcs::VertexPositionGeometry& geometry,
     const RicciGeometryThresholds& thresholds) {
+  if (&geometry.mesh != &mesh) {
+    throw std::invalid_argument(
+        "mesh and geometry preflight must use the same mesh");
+  }
+
   if (!std::isfinite(thresholds.minimum_usable_quality) ||
       !std::isfinite(thresholds.warning_quality) ||
       thresholds.minimum_usable_quality <= 0.0 ||
@@ -484,11 +520,11 @@ void require_ricci_geometry(const RicciGeometryPreflight& report) {
 }
 ```
 
-## Executable examples
+# Executable Examples
 
-Small synthetic meshes make the topology equations concrete and protect the
-preflight from regression.  The examples include a disk and an annulus to
-emphasize that "more than one boundary" does not mean "positive genus."
+The test program follows the same topological/geometric progression as the
+chapter. Its root shows that progression without burying it in individual
+assertions.
 
 ```cpp {name=mesh-preflight-test tangle=tests/mesh_preflight_test.cpp}
 #include "mesh_preflight.h"
@@ -500,6 +536,7 @@ emphasize that "more than one boundary" does not mean "positive genus."
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -508,6 +545,22 @@ emphasize that "more than one boundary" does not mean "positive genus."
 namespace gcs = geometrycentral::surface;
 
 namespace {
+@<mesh-preflight-test-support@>
+}  // namespace
+
+int main() {
+  @<topology-preflight-examples@>
+  @<geometry-quality-examples@>
+  @<invalid-geometry-examples@>
+
+  return EXIT_SUCCESS;
+}
+```
+
+The only test-specific machinery is a compact assertion helper and a convenient
+way to construct Geometry Central meshes from face lists.
+
+```cpp {name=mesh-preflight-test-support}
 void expect(bool condition, const std::string& explanation) {
   if (!condition) {
     std::cerr << "Preflight example failed: " << explanation << '\n';
@@ -519,9 +572,15 @@ gcs::ManifoldSurfaceMesh make_mesh(
     const std::vector<std::vector<std::size_t>>& faces) {
   return gcs::ManifoldSurfaceMesh(faces);
 }
-}  // namespace
+```
 
-int main() {
+## Topological examples
+
+Small synthetic meshes make the classification equations concrete. The disk
+and annulus emphasize that multiple boundary loops do not imply positive genus;
+the remaining cases each violate one requirement of the current solver.
+
+```cpp {name=topology-preflight-examples}
   auto disk = make_mesh({{0, 1, 2}});
   const RicciTopologyPreflight disk_report = analyze_ricci_topology(disk);
   expect(disk_report.ready(), "a triangular disk should be accepted");
@@ -562,7 +621,15 @@ int main() {
   auto quadrilateral = make_mesh({{0, 1, 2, 3}});
   expect(!analyze_ricci_topology(quadrilateral).ready(),
          "the current Ricci solver should reject polygonal faces");
+```
 
+## Scale and triangle quality
+
+These examples make the quality metric's normalization visible: an equilateral
+triangle scores one, uniform scaling preserves that score, and a skinny but
+nondegenerate triangle produces a warning rather than a failure.
+
+```cpp {name=geometry-quality-examples}
   Eigen::Matrix<double, 3, 3> equilateral_positions;
   equilateral_positions << 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.5,
       std::sqrt(3.0) / 2.0, 0.0;
@@ -593,7 +660,16 @@ int main() {
          "a skinny but nondegenerate triangle should remain usable");
   expect(!skinny_report.warnings.empty(),
          "a skinny triangle should produce a quality warning");
+```
 
+## Invalid geometry
+
+The final examples exercise hard failures: collapsed area, non-finite
+coordinates, and a geometry object paired with a mesh it does not belong to.
+The ownership check matters even when the two meshes happen to have identical
+numbers of vertices.
+
+```cpp {name=invalid-geometry-examples}
   Eigen::Matrix<double, 3, 3> collinear_positions;
   collinear_positions << 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 2.0, 0.0, 0.0;
   gcs::VertexPositionGeometry collinear_geometry(disk, collinear_positions);
@@ -606,6 +682,14 @@ int main() {
   expect(!analyze_ricci_geometry(disk, nonfinite_geometry).ready(),
          "a non-finite vertex coordinate should be rejected");
 
-  return EXIT_SUCCESS;
-}
+  auto other_disk = make_mesh({{0, 1, 2}});
+  gcs::VertexPositionGeometry other_geometry(other_disk, equilateral_positions);
+  bool rejected_mismatched_geometry = false;
+  try {
+    analyze_ricci_geometry(disk, other_geometry);
+  } catch (const std::invalid_argument&) {
+    rejected_mismatched_geometry = true;
+  }
+  expect(rejected_mismatched_geometry,
+         "geometry from another mesh should be rejected");
 ```

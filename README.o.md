@@ -1,13 +1,15 @@
 # Geometry Central Surface Viewer
 
-A small C++17 surface mesh viewer using Geometry Central for mesh loading and
-topology, and Polyscope for visualization.
+A literate C++17 surface viewer that uses Geometry Central for mesh topology,
+preflight analysis, and frame fields; Polyscope for interactive visualization;
+and Ricci flow for curvature-driven flattening.
 
 ## Requirements
 
 - CMake 3.20 or newer
 - A C++17 compiler
 - clang-format
+- `omd`, the literate-programming tool used to generate this project
 - OpenGL development libraries
 - X11 or Wayland development libraries required by GLFW on Linux
 
@@ -15,9 +17,26 @@ Geometry Central and Polyscope are fetched automatically when installed packages
 are not found. To use installed packages instead, configure with
 `-DGeometryCentral_DIR=<path>` and `-Dpolyscope_DIR=<path>`.
 
+## Generate
+
+The `.o.md` files are the source of truth. This task tangles every generated
+C++ source, header, and test, then applies the repository's Chromium-based
+format:
+
+```omd {name=generate menu=true}
+tangle
+run format
+```
+
+Run it after changing a literate section:
+
+```bash
+omd run generate
+```
+
 ## Build
 
-Format all generated C++ sources, headers, and tests after tangling:
+The formatting operation used by `generate` is also available independently:
 
 ```bash {name=format menu=true}
 find src tests -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) \
@@ -43,9 +62,17 @@ ctest --test-dir build/release --output-on-failure
 
 ## Run
 
+The default mode runs the complete manifold workflow, including preflight,
+surface analysis, cone selection, and flatten controls:
+
 ```bash {name=app menu=true}
 ./build/release/gc_surface_viewer ricci_flow/data/duck_with_two_holes.obj
 ```
+
+Passing `--nonmanifold` selects inspection-only mode. It uses Geometry
+Central's general mesh reader and omits direction fields, curvature quantities,
+cone targets, and flatten controls—even when the supplied mesh happens to be
+manifold:
 
 ```bash {name=app-nonmanifold menu=true}
 ./build/release/gc_surface_viewer --nonmanifold ricci_flow/data/duck_with_two_holes.obj
