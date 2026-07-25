@@ -6,6 +6,41 @@ explain them; the only implementation logic kept here is the process boundary:
 parse the command line, run the viewer, and translate exceptions into a
 nonzero exit status.
 
+# Viewer Pipeline
+
+After command-line validation, the viewer lifecycle owns mesh and window setup,
+while surface analysis owns the geometric quantities derived from that mesh.
+Reading the callouts from top to bottom gives the executable's operational
+story. Each stage leaves the data needed by the stages below it in the shared
+scope of `main()`.
+
+The default manifold mode runs the complete analysis and flattening workflow.
+The `--nonmanifold` option deliberately selects an inspection-only path:
+Polyscope displays the loaded mesh, but algorithms whose connectivity
+assumptions require a manifold are not constructed or exposed in the UI.
+
+```cpp {name=pipeline-code}
+@<initialize-viewer-state@>
+
+@<load-mesh@>
+
+@<inspect-mesh@>
+
+@<initialize-polyscope@>
+@<register-mesh@>
+
+if (options.require_manifold) {
+  @<compute-cross-field@>
+  @<add-mesh-quantities@>
+
+  @<report-frame-field@>
+
+  @<configure-flattening@>
+}
+
+@<show-viewer@>
+```
+
 # Includes
 
 Each contributing section owns the headers required by its code. Repeated
@@ -14,11 +49,36 @@ deduplicating a harmless preprocessor operation.
 
 ```cpp {name=main-includes}
 @<cmdline-includes@>
-@<pipeline-includes@>
+@<surface-analysis-includes@>
+@<viewer-includes@>
 
 <cstdlib>
 <exception>
 <iostream>
+```
+
+# Namespace Aliases
+
+These aliases apply to the entire generated `main.cpp` translation unit. They
+keep Geometry Central's mathematical and surface-mesh types readable throughout
+the executable without importing individual library names into the global
+namespace.
+
+```cpp {name=main-namespace-aliases}
+namespace gc = geometrycentral;
+namespace gcs = geometrycentral::surface;
+```
+
+# File-local Definitions
+
+Each contributing section owns its private diagnostic helpers. This aggregate
+keeps their details in the files that explain them while giving the executable
+assembly a single definition callout.
+
+```cpp {name=main-defs}
+@<cmdline-defs@>
+@<surface-analysis-defs@>
+@<viewer-defs@>
 ```
 
 # Main File
@@ -35,11 +95,10 @@ their names from colliding with definitions in other translation units.
 ```cpp {name=main tangle=src/main.cpp}
 #include @<main-includes@>
 
-@<pipeline-namespace-aliases@>
+@<main-namespace-aliases@>
 
 namespace {
-@<cmdline-defs@>
-@<pipeline-defs@>
+@<main-defs@>
 }  // namespace
 
 int main(int argc, char** argv) {

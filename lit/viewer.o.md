@@ -25,29 +25,32 @@ preflight interfaces connect those objects to the rest of the application.
 <iostream>
 <memory>
 <tuple>
+<utility>
 ```
 
 # File-local definitions
 
+The viewer contributes one private helper for the concise mesh summary printed
+immediately after loading.
+
 ```cpp {name=viewer-defs}
-@<mesh-stats-defs@>
+@<mesh-summary-defs@>
 ```
 
-# Initialize the viewer
+# Create the long-lived viewer state
 
 The mesh and its geometry share the lifetime of `main()`. Geometry Central
 returns them as owning pointers, allowing the application to select a concrete
 mesh type at load time while the remaining pipeline uses the common
 `SurfaceMesh` interface.
 
-Polyscope must be initialized before any surface is registered.
+Declaration order is significant: local objects are destroyed in reverse
+order, so declaring `geometry` after `mesh` guarantees that the geometry object
+is destroyed before the mesh it references.
 
-```cpp {name=initialize-viewer}
+```cpp {name=initialize-viewer-state}
 std::unique_ptr<gcs::SurfaceMesh> mesh;
 std::unique_ptr<gcs::VertexPositionGeometry> geometry;
-
-polyscope::options::programName = "Mesh to Spline";
-polyscope::init();
 ```
 
 # Load the mesh
@@ -73,8 +76,8 @@ if (options.require_manifold) {
 Loading establishes a valid Geometry Central representation; it does not imply
 that the mesh satisfies every Ricci-flow assumption. The topology and geometry
 preflights therefore produce explicit reports before more expensive analysis
-begins. The flatten action later enforces these reports when solver readiness
-becomes mandatory.
+begins. The flatten action later recomputes and enforces the same conditions
+when solver readiness becomes mandatory.
 
 ```cpp {name=inspect-mesh}
 print_mesh_stats(*mesh);
@@ -87,27 +90,50 @@ const RicciGeometryPreflight geometryPreflight =
 print_ricci_geometry_preflight(geometryPreflight, std::cout);
 ```
 
+# Initialize Polyscope
+
+Graphics resources are created only after the mesh has loaded successfully and
+its preflight reports have been printed. Polyscope must still be initialized
+before any display surface is registered.
+
+```cpp {name=initialize-polyscope}
+polyscope::options::programName = "Mesh to Spline";
+polyscope::init();
+```
+
 # Register the display surface
 
 Polyscope consumes vertex positions and a face-vertex list. The returned
-surface handle is retained because surface analysis attaches quantities to this
-same displayed mesh.
+pointer is non-owning: Polyscope's global registry owns the display surface.
+The pipeline retains the pointer because surface analysis attaches quantities
+to this same registered mesh.
 
 ```cpp {name=register-mesh}
 auto* psMesh = polyscope::registerSurfaceMesh(
     "mesh", geometry->vertexPositions, mesh->getFaceVertexList());
 ```
 
-# Enter the interactive viewer
+# Configure flattening
 
-The callback captures the long-lived mesh, geometry, and frame-field data. It
-owns the flatten controls and launches solver work in response to UI actions.
-`polyscope::show()` then runs the event loop until the window closes.
+The callback factory converts the frame indices into editable cone state before
+returning. The callback itself retains that state and references the long-lived
+mesh and geometry; it does not retain the temporary frame-index object. This
+allows all manifold analysis variables to remain local to the conditional
+pipeline branch.
 
-```cpp {name=run-interactive-viewer}
+```cpp {name=configure-flattening}
 polyscope::state::userCallback = make_flatten_callback(
     options.mesh, *mesh, *geometry, frameIndex, fieldSymmetry);
+```
 
+# Enter the interactive viewer
+
+In manifold mode the registered callback adds the analysis and flattening
+controls. Inspection-only mode leaves the callback unset and therefore shows
+only Polyscope's standard mesh interface. `polyscope::show()` runs the event
+loop until the window closes.
+
+```cpp {name=show-viewer}
 polyscope::show();
 ```
 
@@ -117,7 +143,7 @@ This compact summary records the element counts associated with the in-memory
 Geometry Central mesh. The manifold marker is especially useful when the
 general reader was requested.
 
-```cpp {name=mesh-stats-defs}
+```cpp {name=mesh-summary-defs}
 void print_mesh_stats(gcs::SurfaceMesh& mesh) {
   std::cout << "Loaded mesh: " << mesh.nVertices() << " vertices, "
             << mesh.nEdges() << " edges, " << mesh.nFaces() << " faces";

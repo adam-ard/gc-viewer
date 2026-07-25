@@ -44,7 +44,11 @@ ctest --test-dir build/release --output-on-failure
 ## Run
 
 ```bash {name=app menu=true}
-./build/release/gc_surface_viewer assets/stanford_bunny.off
+./build/release/gc_surface_viewer ricci_flow/data/duck_with_two_holes.obj
+```
+
+```bash {name=app-nonmanifold menu=true}
+./build/release/gc_surface_viewer --nonmanifold ricci_flow/data/duck_with_two_holes.obj
 ```
 
 To exercise the frame-field-to-Ricci workflow, run the viewer with the included
