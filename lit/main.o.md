@@ -14,9 +14,6 @@ deduplicating a harmless preprocessor operation.
 
 ```cpp {name=main-includes}
 @<cmdline-includes@>
-@<cone-targets-interface-includes@>
-@<flatten-interface-includes@>
-@<mesh-preflight-interface-includes@>
 @<pipeline-includes@>
 
 <cstdlib>

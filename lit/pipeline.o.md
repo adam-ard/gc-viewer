@@ -30,21 +30,12 @@ scope of `main()`.
 
 # Dependencies
 
-The pipeline combines specialized dependencies from its two contributing
-sections with the Geometry Central and Polyscope types shared by both.
+Each contributing section owns the headers required by its stages. The pipeline
+combines those local dependency lists without needing to know their contents.
 
 ```cpp {name=pipeline-includes}
 @<surface-analysis-includes@>
 @<viewer-includes@>
-"geometrycentral/surface/surface_mesh.h"
-"geometrycentral/surface/vertex_position_geometry.h"
-
-"polyscope/polyscope.h"
-"polyscope/surface_mesh.h"
-
-<iostream>
-<memory>
-<tuple>
 ```
 
 # Namespace aliases

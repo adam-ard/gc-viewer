@@ -8,10 +8,10 @@ the mesh's Gaussian curvature for inspection.
 # Dependencies
 
 Geometry Central computes the direction field and singularity indices. The cone
-target interface interprets those indices for Ricci flow. Shared mesh,
-geometry, visualization, and stream types come from the pipeline dependencies.
+target interface interprets those indices for Ricci flow.
 
 ```cpp {name=surface-analysis-includes}
+@<cone-targets-interface-includes@>
 "geometrycentral/surface/direction_fields.h"
 ```
 

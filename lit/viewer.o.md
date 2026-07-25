@@ -10,12 +10,21 @@ the interactive event loop.
 Mesh loading uses Geometry Central's general and manifold-specific readers.
 Polyscope owns the window and registered surface, while the flatten and
 preflight interfaces connect those objects to the rest of the application.
-Types shared with surface analysis are supplied by the pipeline's common
-dependencies.
 
 ```cpp {name=viewer-includes}
+@<flatten-interface-includes@>
+@<mesh-preflight-interface-includes@>
 "geometrycentral/surface/manifold_surface_mesh.h"
 "geometrycentral/surface/meshio.h"
+"geometrycentral/surface/surface_mesh.h"
+"geometrycentral/surface/vertex_position_geometry.h"
+
+"polyscope/polyscope.h"
+"polyscope/surface_mesh.h"
+
+<iostream>
+<memory>
+<tuple>
 ```
 
 # File-local definitions
