@@ -17,6 +17,19 @@ Geometry Central and Polyscope are fetched automatically when installed packages
 are not found. To use installed packages instead, configure with
 `-DGeometryCentral_DIR=<path>` and `-Dpolyscope_DIR=<path>`.
 
+## Ricci-flow dependency
+
+The Ricci-flow solver is maintained in a separate repository and is not fetched
+by CMake. After cloning this viewer, clone the solver into the `ricci_flow`
+directory expected by `add_subdirectory()`:
+
+```bash
+git clone https://github.com/kendrickshepherd/ricci_flow.git ricci_flow
+```
+
+The resulting layout should contain `ricci_flow/CMakeLists.txt` alongside this
+project's top-level `CMakeLists.txt`.
+
 ## Generate
 
 The `.o.md` files are the source of truth. This task tangles every generated
