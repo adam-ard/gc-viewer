@@ -1,0 +1,772 @@
+<!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>lit/flatten</title>
+      <style>
+        :root {
+          color-scheme: light dark;
+          --page: #f7f5ef;
+          --panel: #ffffff;
+          --text: #27251f;
+          --muted: #6d685c;
+          --line: #d8d2c4;
+          --accent: #087f5b;
+          --block: #edf5f1;
+          --block-line: #b8d2c6;
+          --code: #e8f0ec;
+          --code-line: #b8d2c6;
+        }
+        @media (prefers-color-scheme: dark) {
+          :root {
+            --page: #171815;
+            --panel: #20221e;
+            --text: #e9e5da;
+            --muted: #aaa394;
+            --line: #3b3e36;
+            --accent: #63e6be;
+            --block: #18251f;
+            --block-line: #365247;
+            --code: #19221e;
+            --code-line: #365247;
+          }
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+          margin: 0;
+          background: var(--page);
+          color: var(--text);
+          font: 17px/1.65 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        main {
+          width: min(100% - 2rem, 980px);
+          margin: 2rem auto 5rem;
+          padding: clamp(1.25rem, 4vw, 3.5rem);
+          background: var(--panel);
+          border: 1px solid var(--line);
+          border-radius: 18px;
+          box-shadow: 0 18px 60px rgb(0 0 0 / 8%);
+        }
+        h1, h2, h3, h4, h5 { line-height: 1.25; scroll-margin-top: 1rem; }
+        .omd-code-block {
+          position: relative;
+          margin: 3.5rem 0;
+          padding: 1.75rem 1.4rem 1.25rem;
+          background: var(--block);
+          border: 1px solid var(--block-line);
+          border-radius: 14px;
+        }
+        .omd-code-anchor {
+          scroll-margin-top: 1rem;
+        }
+        .omd-code-title {
+          position: absolute;
+          top: 0;
+          left: 1.4rem;
+          transform: translateY(-50%);
+          margin: 0;
+          padding: 0.28rem 0.8rem;
+          background: var(--block);
+          border: 1px solid var(--block-line);
+          border-radius: 999px;
+          box-shadow: 0 3px 10px rgb(0 0 0 / 8%);
+          font-size: 1rem;
+          letter-spacing: -0.01em;
+        }
+        .omd-code-title code {
+          padding: 0;
+          color: var(--text);
+          background: transparent;
+        }
+        .omd-code-title.unnamed {
+          color: var(--muted);
+          font-weight: 500;
+        }
+        a { color: var(--accent); text-underline-offset: 0.16em; }
+        pre {
+          overflow-x: auto;
+          padding: 1.1rem 1.25rem;
+          background: var(--code);
+          border: 1px solid var(--code-line);
+          border-radius: 10px;
+          line-height: 1.5;
+        }
+        .omd-code-panel {
+          position: relative;
+          margin: 1.75rem 0 1rem;
+        }
+        .omd-code-panel pre {
+          margin: 0;
+        }
+        .omd-code-panel.has-language pre {
+          padding-top: 1.65rem;
+        }
+        .omd-language-label {
+          position: absolute;
+          top: 0;
+          left: 1rem;
+          z-index: 1;
+          transform: translateY(-50%);
+          padding: 0.2rem 0.65rem;
+          color: var(--text);
+          background: var(--code);
+          border: 1px solid var(--code-line);
+          border-radius: 999px;
+          font: 600 0.82rem/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+        }
+        code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+        :not(pre) > code {
+          padding: 0.12rem 0.35rem;
+          background: var(--code);
+          border-radius: 5px;
+        }
+        pre .omd-reference {
+          padding: 0.08em 0.18em;
+          color: var(--accent);
+          background: color-mix(in srgb, var(--accent) 13%, transparent);
+          border-radius: 4px;
+          font-weight: 700;
+        }
+        blockquote {
+          margin-left: 0;
+          padding-left: 1rem;
+          color: var(--muted);
+          border-left: 4px solid var(--line);
+        }
+        @media (max-width: 640px) {
+          main { width: 100%; margin: 0; border: 0; border-radius: 0; }
+        }
+      </style>
+    </head>
+    <body>
+      <main>
+    <h1 id="flatten-ui">Flatten UI</h1>
+<p>The flatten module owns the interactive Ricci-flow workflow. Its
+public header exposes one callback factory; process management,
+validation, output placement, and UI state remain private to the
+implementation.</p>
+<h1 id="public-interface">Public Interface</h1>
+<div class="omd-code-block">
+<div id="omd-code-1" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>flatten-interface-includes</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">&quot;flatten.h&quot;
+</code></pre>
+</div>
+<h5 id="referenced-by">Referenced by</h5>
+<ul>
+<li><a href="viewer.html#omd-code-1">lit/viewer.html, code block
+1</a></li>
+</ul>
+</div>
+<div class="omd-code-block">
+<div id="omd-code-2" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>flatten-header</code>
+</h4>
+<ul>
+<li>tangle: <code>src/flatten.h</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">#pragma once
+
+#include &quot;geometrycentral/surface/surface_mesh.h&quot;
+
+#include &lt;functional&gt;
+#include &lt;string&gt;
+
+namespace geometrycentral::surface {
+class VertexPositionGeometry;
+}
+
+std::function&lt;void()&gt; make_flatten_callback(
+    std::string input_path,
+    geometrycentral::surface::SurfaceMesh&amp; mesh,
+    geometrycentral::surface::VertexPositionGeometry&amp; geometry,
+    geometrycentral::surface::VertexData&lt;int&gt;&amp; frame_indices,
+    int field_symmetry);
+</code></pre>
+</div>
+</div>
+<h1 id="implementation-includes">Implementation Includes</h1>
+<div class="omd-code-block">
+<div id="omd-code-3" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>flatten-implementation-includes</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">&quot;cone_targets.h&quot;
+&quot;flatten.h&quot;
+&quot;mesh_preflight.h&quot;
+
+&quot;geometrycentral/surface/meshio.h&quot;
+&quot;geometrycentral/surface/surface_mesh.h&quot;
+&quot;geometrycentral/surface/vertex_position_geometry.h&quot;
+
+&quot;polyscope/polyscope.h&quot;
+&quot;polyscope/pick.h&quot;
+&quot;polyscope/point_cloud.h&quot;
+&quot;polyscope/point_cloud_color_quantity.h&quot;
+&quot;polyscope/surface_mesh.h&quot;
+&quot;polyscope/view.h&quot;
+
+&lt;algorithm&gt;
+&lt;chrono&gt;
+&lt;cstdlib&gt;
+&lt;filesystem&gt;
+&lt;fstream&gt;
+&lt;future&gt;
+&lt;limits&gt;
+&lt;memory&gt;
+&lt;sstream&gt;
+&lt;stdexcept&gt;
+&lt;utility&gt;
+&lt;vector&gt;
+</code></pre>
+</div>
+<h5 id="referenced-by-1">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-9">lit/flatten.html, code block 9</a></li>
+</ul>
+</div>
+<h1 id="ricci-command">Ricci Command</h1>
+<p>The command-line bridge uses an OBJ written from Geometry Central’s
+in-memory mesh rather than reopening the user’s original file. This
+normalization makes the target IDs reliable: Geometry Central may strip
+unused input vertices, and its dense enumeration is exactly the
+enumeration written to the temporary OBJ. When the Ricci solver becomes
+a library this pair of temporary files can be replaced by in-memory data
+without changing the cone-selection model.</p>
+<div class="omd-code-block">
+<div id="omd-code-4" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>flatten-definitions</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">std::string shell_quote(const std::string&amp; value) {
+  std::string quoted = &quot;&#x27;&quot;;
+  for (char character : value) {
+    if (character == &#x27;\&#x27;&#x27;) {
+      quoted += &quot;&#x27;\\&#x27;&#x27;&quot;;
+    } else {
+      quoted += character;
+    }
+  }
+  quoted += &#x27;\&#x27;&#x27;;
+  return quoted;
+}
+
+struct RicciConfig {
+  std::filesystem::path input_path;
+  std::filesystem::path target_path;
+  std::filesystem::path output_path;
+  FrameFieldConeTargets cone_targets;
+
+  std::string command() const {
+    return shell_quote(RICCI_FLOW_CLI_PATH) + &quot; &quot; +
+           shell_quote(input_path.string()) +
+           &quot; --flatten-boundary --cone-targets &quot; +
+           shell_quote(target_path.string()) +
+           &quot; --target-mode additive --target-continuation&quot;
+           &quot; --solver-diagnostics --output &quot; +
+           shell_quote(output_path.string());
+  }
+};
+
+RicciConfig make_ricci_config(const std::filesystem::path&amp; original_input_path,
+                              gcs::SurfaceMesh&amp; mesh,
+                              gcs::VertexPositionGeometry&amp; geometry,
+                              const FrameFieldConeTargets&amp; cone_targets) {
+  const std::filesystem::path output_directory =
+      std::filesystem::temp_directory_path() / &quot;geometry-central-viewer&quot;;
+  std::filesystem::create_directories(output_directory);
+
+  std::string stem = original_input_path.stem().string();
+  if (stem.empty()) {
+    stem = &quot;surface&quot;;
+  }
+
+  RicciConfig config{output_directory / (stem + &quot;.frame-field-input.obj&quot;),
+                     output_directory / (stem + &quot;.frame-field-targets.txt&quot;),
+                     output_directory / (stem + &quot;.ricci-flat.obj&quot;),
+                     cone_targets};
+
+  gcs::writeSurfaceMesh(mesh, geometry, config.input_path.string(), &quot;obj&quot;);
+
+  std::ofstream target_output(config.target_path);
+  if (!target_output) {
+    throw std::runtime_error(&quot;Could not create frame-field targets: &quot; +
+                             config.target_path.string());
+  }
+  write_obj_cone_targets(config.cone_targets, target_output);
+  if (!target_output) {
+    throw std::runtime_error(&quot;Failed while writing frame-field targets: &quot; +
+                             config.target_path.string());
+  }
+
+  return config;
+}
+
+struct RicciJob {
+  RicciConfig config;
+  std::future&lt;int&gt; result;
+
+  void start(RicciConfig new_config) {
+    config = std::move(new_config);
+    const std::string command = config.command();
+    result = std::async(std::launch::async,
+                        [command]() { return std::system(command.c_str()); });
+  }
+
+  bool running() const { return result.valid(); }
+
+  bool ready() const {
+    return running() &amp;&amp; result.wait_for(std::chrono::seconds(0)) ==
+                            std::future_status::ready;
+  }
+
+  int finish() { return result.get(); }
+};
+</code></pre>
+</div>
+<h5 id="referenced-by-2">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-9">lit/flatten.html, code block 9</a></li>
+</ul>
+</div>
+<h1 id="mesh-placement">Mesh Placement</h1>
+<div class="omd-code-block">
+<div id="omd-code-5" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>flatten-definitions</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">struct MeshBounds {
+  gc::Vector3 min = gc::Vector3::infinity();
+  gc::Vector3 max = -gc::Vector3::infinity();
+
+  gc::Vector3 center() const { return 0.5 * (min + max); }
+
+  double extent() const {
+    const gc::Vector3 size = max - min;
+    return std::max({size[0], size[1], size[2], 1e-6});
+  }
+};
+
+MeshBounds mesh_bounds(gcs::SurfaceMesh&amp; mesh,
+                       const gcs::VertexPositionGeometry&amp; geometry) {
+  MeshBounds bounds;
+  for (gcs::Vertex vertex : mesh.vertices()) {
+    bounds.min =
+        gc::componentwiseMin(bounds.min, geometry.vertexPositions[vertex]);
+    bounds.max =
+        gc::componentwiseMax(bounds.max, geometry.vertexPositions[vertex]);
+  }
+  return bounds;
+}
+
+void place_flattened_mesh_beside_original(
+    gcs::SurfaceMesh&amp; original_mesh,
+    const gcs::VertexPositionGeometry&amp; original_geometry,
+    gcs::SurfaceMesh&amp; flattened_mesh,
+    gcs::VertexPositionGeometry&amp; flattened_geometry) {
+  const MeshBounds original_bounds =
+      mesh_bounds(original_mesh, original_geometry);
+  const MeshBounds flat_bounds =
+      mesh_bounds(flattened_mesh, flattened_geometry);
+  const double original_extent = original_bounds.extent();
+  const double scale = 0.5 * original_extent / flat_bounds.extent();
+
+  const gc::Vector3 original_center = original_bounds.center();
+  const gc::Vector3 flat_center = flat_bounds.center();
+  const gc::Vector3 target_center{
+      original_bounds.max[0] + 0.4 * original_extent, original_center[1],
+      original_center[2]};
+
+  for (gcs::Vertex vertex : flattened_mesh.vertices()) {
+    flattened_geometry.vertexPositions[vertex] =
+        scale * (flattened_geometry.vertexPositions[vertex] - flat_center) +
+        target_center;
+  }
+}
+</code></pre>
+</div>
+<h5 id="referenced-by-3">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-9">lit/flatten.html, code block 9</a></li>
+</ul>
+</div>
+<h1 id="input-validation">Input Validation</h1>
+<p>The topology preflight is shared with the viewer’s load-time report.
+Repeating the inexpensive analysis when the button is pressed keeps the
+flattening boundary honest if later viewer tools are allowed to modify
+mesh connectivity.</p>
+<div class="omd-code-block">
+<div id="omd-code-6" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>flatten-definitions</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">void validate_ricci_input(gcs::SurfaceMesh&amp; mesh,
+                          gcs::VertexPositionGeometry&amp; geometry) {
+  require_ricci_topology(analyze_ricci_topology(mesh));
+  require_ricci_geometry(analyze_ricci_geometry(mesh, geometry));
+}
+
+struct FlattenState {
+  std::string status;
+  RicciJob job;
+  EditableConeTargets editor;
+  polyscope::PointCloud* candidate_cloud = nullptr;
+  polyscope::PointCloudColorQuantity* candidate_colors = nullptr;
+  std::size_t focused_candidate = 0;
+  std::size_t colored_candidate = std::numeric_limits&lt;std::size_t&gt;::max();
+  bool candidate_colors_dirty = true;
+};
+</code></pre>
+</div>
+<h5 id="referenced-by-4">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-9">lit/flatten.html, code block 9</a></li>
+</ul>
+</div>
+<h1 id="cone-editor">Cone Editor</h1>
+<p>The frame field remains visible as the computed proposal, while this
+editor stores an independent Ricci prescription. Every nonzero
+frame-field singularity becomes a persistent candidate marker. Orange
+markers carry positive prescribed index, blue markers carry negative
+index, gray markers are disabled, and the candidate currently selected
+in Polyscope is yellow.</p>
+<p>Clicking a marker only changes which row is focused. The checkbox and
+integer input perform the mathematical edit; this separation prevents an
+exploratory camera click from silently changing a target. Editing is
+disabled while a solver process is running, and the process receives an
+immutable <code>active_targets()</code> snapshot.</p>
+<div class="omd-code-block">
+<div id="omd-code-7" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>flatten-definitions</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">std::vector&lt;glm::vec3&gt; candidate_colors(const EditableConeTargets&amp; editor,
+                                        std::size_t focused_candidate) {
+  std::vector&lt;glm::vec3&gt; colors;
+  colors.reserve(editor.candidates.size());
+  for (std::size_t i = 0; i &lt; editor.candidates.size(); ++i) {
+    const EditableConeTarget&amp; candidate = editor.candidates[i];
+    if (i == focused_candidate) {
+      colors.emplace_back(1.0F, 0.85F, 0.1F);
+    } else if (!candidate.selected || candidate.prescribed_index == 0) {
+      colors.emplace_back(0.45F, 0.45F, 0.45F);
+    } else if (candidate.prescribed_index &gt; 0) {
+      colors.emplace_back(0.95F, 0.3F, 0.08F);
+    } else {
+      colors.emplace_back(0.12F, 0.4F, 0.95F);
+    }
+  }
+  return colors;
+}
+
+void refresh_candidate_colors(FlattenState&amp; state) {
+  if (!state.candidate_cloud || !state.candidate_colors ||
+      state.editor.candidates.empty()) {
+    return;
+  }
+  if (!state.candidate_colors_dirty &amp;&amp;
+      state.colored_candidate == state.focused_candidate) {
+    return;
+  }
+
+  state.candidate_colors-&gt;updateData(
+      candidate_colors(state.editor, state.focused_candidate));
+  state.colored_candidate = state.focused_candidate;
+  state.candidate_colors_dirty = false;
+}
+
+void follow_polyscope_candidate_selection(FlattenState&amp; state) {
+  if (!state.candidate_cloud || !polyscope::haveSelection()) {
+    return;
+  }
+
+  const polyscope::PickResult selection = polyscope::getSelection();
+  if (selection.structure != state.candidate_cloud) {
+    return;
+  }
+
+  const polyscope::PointCloudPickResult point =
+      state.candidate_cloud-&gt;interpretPickResult(selection);
+  if (point.index &gt;= 0 &amp;&amp;
+      static_cast&lt;std::size_t&gt;(point.index) &lt; state.editor.candidates.size()) {
+    state.focused_candidate = static_cast&lt;std::size_t&gt;(point.index);
+  }
+}
+
+void draw_cone_editor(FlattenState&amp; state) {
+  if (!ImGui::CollapsingHeader(&quot;Cone singularities&quot;,
+                               ImGuiTreeNodeFlags_DefaultOpen)) {
+    return;
+  }
+
+  const FrameFieldConeTargets active = state.editor.active_targets();
+  ImGui::Text(&quot;Active cones: %zu / %zu&quot;, active.targets.size(),
+              state.editor.candidates.size());
+  ImGui::Text(&quot;Index sum: %lld / %lld&quot;,
+              static_cast&lt;long long&gt;(active.selected_index_sum),
+              static_cast&lt;long long&gt;(active.required_index_sum));
+  ImGui::Text(&quot;Boundary residual: %.6g radians&quot;, active.curvature_residual);
+  if (!active.satisfies_gauss_bonnet()) {
+    ImGui::TextWrapped(
+        &quot;Additive mode assigns this residual to unselected &quot;
+        &quot;boundary vertices.&quot;);
+  }
+
+  ImGui::BeginDisabled(state.job.running());
+  if (ImGui::Button(&quot;Reset to frame field&quot;)) {
+    state.editor.reset_to_frame_field();
+    state.candidate_colors_dirty = true;
+  }
+  ImGui::SameLine();
+  if (ImGui::Button(&quot;Deselect all&quot;)) {
+    state.editor.deselect_all();
+    state.candidate_colors_dirty = true;
+  }
+
+  ImGui::TextWrapped(
+      &quot;Click a marker to focus it. Active controls whether the cone &quot;
+      &quot;is sent to Ricci flow; one index unit equals 2pi/%d.&quot;,
+      state.editor.field_symmetry);
+
+  ImGui::BeginChild(&quot;cone candidate list&quot;, ImVec2(0.0F, 260.0F), true);
+  for (std::size_t i = 0; i &lt; state.editor.candidates.size(); ++i) {
+    EditableConeTarget&amp; candidate = state.editor.candidates[i];
+    ImGui::PushID(static_cast&lt;int&gt;(i));
+
+    bool selected = candidate.selected;
+    if (ImGui::Checkbox(&quot;##active&quot;, &amp;selected)) {
+      candidate.selected = selected;
+      state.candidate_colors_dirty = true;
+    }
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(100.0F);
+    int prescribed_index = candidate.prescribed_index;
+    if (ImGui::InputInt(&quot;##index&quot;, &amp;prescribed_index, 1, 4)) {
+      candidate.prescribed_index = prescribed_index;
+      candidate.selected = prescribed_index != 0;
+      state.candidate_colors_dirty = true;
+    }
+    ImGui::SameLine();
+
+    std::ostringstream label;
+    label &lt;&lt; &quot;vertex &quot; &lt;&lt; candidate.vertex_index &lt;&lt; &quot;  (frame &quot;
+          &lt;&lt; candidate.original_frame_index &lt;&lt; &quot;)&quot;;
+    if (ImGui::Selectable(label.str().c_str(), state.focused_candidate == i)) {
+      state.focused_candidate = i;
+    }
+
+    ImGui::PopID();
+  }
+  ImGui::EndChild();
+  ImGui::EndDisabled();
+}
+</code></pre>
+</div>
+<h5 id="referenced-by-5">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-9">lit/flatten.html, code block 9</a></li>
+</ul>
+</div>
+<h1 id="callback-body">Callback Body</h1>
+<div class="omd-code-block">
+<div id="omd-code-8" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>flatten-callback-body</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">follow_polyscope_candidate_selection(*state);
+refresh_candidate_colors(*state);
+draw_cone_editor(*state);
+
+ImGui::BeginDisabled(state-&gt;job.running());
+const bool flatten_requested = ImGui::Button(&quot;Flatten&quot;);
+ImGui::EndDisabled();
+
+if (flatten_requested) {
+  try {
+    validate_ricci_input(mesh, geometry);
+
+    const FrameFieldConeTargets active_targets = state-&gt;editor.active_targets();
+    RicciConfig config =
+        make_ricci_config(input_path, mesh, geometry, active_targets);
+    std::ostringstream status;
+    status &lt;&lt; &quot;Running Ricci flow with &quot; &lt;&lt; config.cone_targets.targets.size()
+           &lt;&lt; &quot; active cones&quot;
+           &lt;&lt; &quot;\nIndex sum: &quot; &lt;&lt; config.cone_targets.selected_index_sum &lt;&lt; &quot; / &quot;
+           &lt;&lt; config.cone_targets.required_index_sum
+           &lt;&lt; &quot;\nBoundary curvature residual: &quot;
+           &lt;&lt; config.cone_targets.curvature_residual;
+    state-&gt;status = status.str();
+    state-&gt;job.start(std::move(config));
+  } catch (const std::exception&amp; error) {
+    state-&gt;status = std::string(&quot;Flatten failed: &quot;) + error.what();
+  }
+}
+
+if (state-&gt;job.ready()) {
+  try {
+    const int exit_status = state-&gt;job.finish();
+    if (exit_status != 0) {
+      throw std::runtime_error(
+          &quot;Ricci flow failed with status &quot; + std::to_string(exit_status) +
+          &quot;; targets: &quot; + state-&gt;job.config.target_path.string());
+    }
+
+    auto [flattened_mesh, flattened_geometry] =
+        gcs::readSurfaceMesh(state-&gt;job.config.output_path.string());
+    place_flattened_mesh_beside_original(mesh, geometry, *flattened_mesh,
+                                         *flattened_geometry);
+
+    polyscope::registerSurfaceMesh(&quot;flattened mesh&quot;,
+                                   flattened_geometry-&gt;vertexPositions,
+                                   flattened_mesh-&gt;getFaceVertexList());
+    polyscope::view::resetCameraToHomeView();
+
+    std::ostringstream status;
+    status &lt;&lt; &quot;Loaded Ricci mesh using &quot;
+           &lt;&lt; state-&gt;job.config.cone_targets.targets.size() &lt;&lt; &quot; active cones&quot;
+           &lt;&lt; &quot;\nIndex sum: &quot;
+           &lt;&lt; state-&gt;job.config.cone_targets.selected_index_sum &lt;&lt; &quot; / &quot;
+           &lt;&lt; state-&gt;job.config.cone_targets.required_index_sum
+           &lt;&lt; &quot;\nBoundary curvature residual: &quot;
+           &lt;&lt; state-&gt;job.config.cone_targets.curvature_residual
+           &lt;&lt; &quot;\nTargets: &quot; &lt;&lt; state-&gt;job.config.target_path.string()
+           &lt;&lt; &quot;\nOutput: &quot; &lt;&lt; state-&gt;job.config.output_path.string();
+    state-&gt;status = status.str();
+  } catch (const std::exception&amp; error) {
+    state-&gt;status = std::string(&quot;Flatten failed: &quot;) + error.what();
+  }
+}
+
+if (!state-&gt;status.empty()) {
+  ImGui::TextWrapped(&quot;%s&quot;, state-&gt;status.c_str());
+}
+</code></pre>
+</div>
+<h5 id="referenced-by-6">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-9">lit/flatten.html, code block 9</a></li>
+</ul>
+</div>
+<h1 id="implementation-file">Implementation File</h1>
+<div class="omd-code-block">
+<div id="omd-code-9" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>flatten-source</code>
+</h4>
+<ul>
+<li>tangle: <code>src/flatten.cpp</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">#include <a class="omd-reference" href="#omd-code-3">@&lt;flatten-implementation-includes@&gt;</a>
+
+namespace gc = geometrycentral;
+namespace gcs = geometrycentral::surface;
+
+namespace {
+<a class="omd-reference" href="#omd-code-4">@&lt;flatten-definitions@&gt;</a>
+}
+
+std::function&lt;void()&gt; make_flatten_callback(
+    std::string input_path,
+    gcs::SurfaceMesh&amp; mesh,
+    gcs::VertexPositionGeometry&amp; geometry,
+    gcs::VertexData&lt;int&gt;&amp; frame_indices,
+    int field_symmetry) {
+  auto state = std::make_shared&lt;FlattenState&gt;();
+  state-&gt;editor =
+      derive_editable_cone_targets(mesh, frame_indices, field_symmetry);
+
+  std::vector&lt;gc::Vector3&gt; candidate_positions;
+  candidate_positions.reserve(state-&gt;editor.candidates.size());
+  const gcs::VertexData&lt;std::size_t&gt; dense_indices = mesh.getVertexIndices();
+  std::vector&lt;gcs::Vertex&gt; vertices_by_index(mesh.nVertices());
+  for (gcs::Vertex vertex : mesh.vertices()) {
+    vertices_by_index[dense_indices[vertex]] = vertex;
+  }
+  for (const EditableConeTarget&amp; candidate : state-&gt;editor.candidates) {
+    candidate_positions.push_back(
+        geometry.vertexPositions[vertices_by_index[candidate.vertex_index]]);
+  }
+
+  if (!candidate_positions.empty()) {
+    state-&gt;candidate_cloud =
+        polyscope::registerPointCloud(&quot;cone candidates&quot;, candidate_positions);
+    state-&gt;candidate_cloud-&gt;setPointRadius(0.012);
+    state-&gt;candidate_colors = state-&gt;candidate_cloud-&gt;addColorQuantity(
+        &quot;prescribed cone state&quot;,
+        candidate_colors(state-&gt;editor, state-&gt;focused_candidate));
+    state-&gt;candidate_colors-&gt;setEnabled(true);
+    state-&gt;candidate_colors_dirty = false;
+    state-&gt;colored_candidate = state-&gt;focused_candidate;
+  }
+
+  return [state, input_path = std::move(input_path), &amp;mesh, &amp;geometry]() {
+    <a class="omd-reference" href="#omd-code-8">@&lt;flatten-callback-body@&gt;</a>
+  };
+}
+</code></pre>
+</div>
+</div>
+
+      </main>
+    </body>
+    </html>
+    

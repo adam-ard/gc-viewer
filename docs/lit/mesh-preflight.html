@@ -1,0 +1,1005 @@
+<!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>lit/mesh-preflight</title>
+      <style>
+        :root {
+          color-scheme: light dark;
+          --page: #f7f5ef;
+          --panel: #ffffff;
+          --text: #27251f;
+          --muted: #6d685c;
+          --line: #d8d2c4;
+          --accent: #087f5b;
+          --block: #edf5f1;
+          --block-line: #b8d2c6;
+          --code: #e8f0ec;
+          --code-line: #b8d2c6;
+        }
+        @media (prefers-color-scheme: dark) {
+          :root {
+            --page: #171815;
+            --panel: #20221e;
+            --text: #e9e5da;
+            --muted: #aaa394;
+            --line: #3b3e36;
+            --accent: #63e6be;
+            --block: #18251f;
+            --block-line: #365247;
+            --code: #19221e;
+            --code-line: #365247;
+          }
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+          margin: 0;
+          background: var(--page);
+          color: var(--text);
+          font: 17px/1.65 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        main {
+          width: min(100% - 2rem, 980px);
+          margin: 2rem auto 5rem;
+          padding: clamp(1.25rem, 4vw, 3.5rem);
+          background: var(--panel);
+          border: 1px solid var(--line);
+          border-radius: 18px;
+          box-shadow: 0 18px 60px rgb(0 0 0 / 8%);
+        }
+        h1, h2, h3, h4, h5 { line-height: 1.25; scroll-margin-top: 1rem; }
+        .omd-code-block {
+          position: relative;
+          margin: 3.5rem 0;
+          padding: 1.75rem 1.4rem 1.25rem;
+          background: var(--block);
+          border: 1px solid var(--block-line);
+          border-radius: 14px;
+        }
+        .omd-code-anchor {
+          scroll-margin-top: 1rem;
+        }
+        .omd-code-title {
+          position: absolute;
+          top: 0;
+          left: 1.4rem;
+          transform: translateY(-50%);
+          margin: 0;
+          padding: 0.28rem 0.8rem;
+          background: var(--block);
+          border: 1px solid var(--block-line);
+          border-radius: 999px;
+          box-shadow: 0 3px 10px rgb(0 0 0 / 8%);
+          font-size: 1rem;
+          letter-spacing: -0.01em;
+        }
+        .omd-code-title code {
+          padding: 0;
+          color: var(--text);
+          background: transparent;
+        }
+        .omd-code-title.unnamed {
+          color: var(--muted);
+          font-weight: 500;
+        }
+        a { color: var(--accent); text-underline-offset: 0.16em; }
+        pre {
+          overflow-x: auto;
+          padding: 1.1rem 1.25rem;
+          background: var(--code);
+          border: 1px solid var(--code-line);
+          border-radius: 10px;
+          line-height: 1.5;
+        }
+        .omd-code-panel {
+          position: relative;
+          margin: 1.75rem 0 1rem;
+        }
+        .omd-code-panel pre {
+          margin: 0;
+        }
+        .omd-code-panel.has-language pre {
+          padding-top: 1.65rem;
+        }
+        .omd-language-label {
+          position: absolute;
+          top: 0;
+          left: 1rem;
+          z-index: 1;
+          transform: translateY(-50%);
+          padding: 0.2rem 0.65rem;
+          color: var(--text);
+          background: var(--code);
+          border: 1px solid var(--code-line);
+          border-radius: 999px;
+          font: 600 0.82rem/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+        }
+        code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+        :not(pre) > code {
+          padding: 0.12rem 0.35rem;
+          background: var(--code);
+          border-radius: 5px;
+        }
+        pre .omd-reference {
+          padding: 0.08em 0.18em;
+          color: var(--accent);
+          background: color-mix(in srgb, var(--accent) 13%, transparent);
+          border-radius: 4px;
+          font-weight: 700;
+        }
+        blockquote {
+          margin-left: 0;
+          padding-left: 1rem;
+          color: var(--muted);
+          border-left: 4px solid var(--line);
+        }
+        @media (max-width: 640px) {
+          main { width: 100%; margin: 0; border: 0; border-radius: 0; }
+        }
+      </style>
+    </head>
+    <body>
+      <main>
+    <h1 id="ricci-flow-mesh-preflight">Ricci-Flow Mesh Preflight</h1>
+<p>The paper’s first step asks for a <em>feature-aware, computation-safe
+triangulation</em>. “Computation-safe” is broader than “manifold”: it
+includes geometric quality and faithful representation of the source CAD
+model. We therefore build the preflight in layers. This first layer
+answers only the topological question:</p>
+<blockquote>
+<p>Does the mesh belong to the class of surfaces that the current
+boundary Ricci-flow and cut-graph implementation is designed to
+process?</p>
+</blockquote>
+<p>Keeping that question separate from geometric quality is useful
+pedagogically and architecturally. A topologically valid mesh can still
+contain a nearly zero-area triangle, while a geometrically beautiful
+mesh can still contain a nonmanifold edge. The two failures need
+different explanations and different repairs.</p>
+<h1 id="topological-preflight">Topological Preflight</h1>
+<h2 id="what-the-manifold-loader-establishes">What the manifold loader
+establishes</h2>
+<p>Geometry Central’s <code>ManifoldSurfaceMesh</code> constructor
+establishes local combinatorial facts: consistently oriented face
+adjacency, at most two faces per edge, and one connected fan of faces
+around each vertex. These are <em>local</em> conditions. They do not
+imply that the whole mesh is connected, that it has a boundary, or that
+it has genus zero.</p>
+<p>The current Ricci cut code accepts genus-zero surfaces with one or
+more boundary components. A disk has one boundary loop; an annulus has
+two. Both have genus zero, so both are valid inputs even though only the
+disk is already simply connected.</p>
+<h2 id="euler-characteristic-as-a-topology-checksum">Euler
+characteristic as a topology checksum</h2>
+<p>For a finite surface mesh,</p>
+<p><span
+class="math display"><em>χ</em> = <em>V</em> − <em>E</em> + <em>F</em>.</span></p>
+<p>For an orientable surface with <span
+class="math inline"><em>c</em></span> connected components, <span
+class="math inline"><em>b</em></span> boundary loops, and total genus
+<span class="math inline"><em>g</em></span>,</p>
+<p><span
+class="math display"><em>χ</em> = 2<em>c</em> − 2<em>g</em> − <em>b</em>.</span></p>
+<p>Consequently,</p>
+<p><span
+class="math display">2<em>g</em> = 2<em>c</em> − <em>b</em> − <em>χ</em>.</span></p>
+<p>This relation does two jobs for us. It identifies positive-genus
+inputs that need handle and tunnel cuts not yet implemented, and it acts
+as a consistency check: the right-hand side must be a nonnegative even
+integer for an orientable manifold.</p>
+<h3 id="why-not-call-manifoldsurfacemeshgenus">Why not call
+<code>ManifoldSurfaceMesh::genus()</code>?</h3>
+<p>We should use Geometry Central as the authority whenever its
+semantics match the algorithm. Accordingly, the implementation below
+delegates manifoldness, orientation, triangularity, connected-component
+traversal, boundary-loop enumeration, and all element counts to Geometry
+Central.</p>
+<p>The pinned Geometry Central revision uses a different
+Euler-characteristic convention in
+<code>ManifoldSurfaceMesh::eulerCharacteristic()</code>: it evaluates
+<span
+class="math inline"><em>V</em> − <em>E</em> + <em>F</em> + <em>b</em></span>,
+as though every boundary loop had been capped by a face. The Ricci-flow
+Gauss–Bonnet condition and the classification formula above require the
+uncapped surface value <span
+class="math inline"><em>V</em> − <em>E</em> + <em>F</em></span>.
+Moreover, the corresponding library <code>genus()</code> helper is not
+suitable for an open, multiply connected surface; for example, it
+reports a negative value for an annulus.</p>
+<p>We therefore use Geometry Central to obtain <span
+class="math inline"><em>V</em></span>, <span
+class="math inline"><em>E</em></span>, <span
+class="math inline"><em>F</em></span>, <span
+class="math inline"><em>b</em></span>, and <span
+class="math inline"><em>c</em></span>, but perform the final two lines
+of integer arithmetic ourselves. This is a semantic adapter, not a
+second mesh-topology implementation. If a future Geometry Central
+revision adds an explicitly boundary-aware genus routine, this is the
+one calculation that should be replaced.</p>
+<h2 id="public-interface">Public interface</h2>
+<p>A preflight returns data rather than merely throwing an exception.
+The viewer can teach the user <em>why</em> a mesh was rejected, and
+future UI work can display every failed condition at once.</p>
+<div class="omd-code-block">
+<div id="omd-code-1" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>mesh-preflight-interface-includes</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">&quot;mesh_preflight.h&quot;
+</code></pre>
+</div>
+<h5 id="referenced-by">Referenced by</h5>
+<ul>
+<li><a href="viewer.html#omd-code-1">lit/viewer.html, code block
+1</a></li>
+</ul>
+</div>
+<p>The tangled header is an outline of those two layers. Their
+declarations live beside the concepts they express below.</p>
+<div class="omd-code-block">
+<div id="omd-code-2" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>mesh-preflight-header</code>
+</h4>
+<ul>
+<li>tangle: <code>src/mesh_preflight.h</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">#pragma once
+
+#include &lt;cstddef&gt;
+#include &lt;cstdint&gt;
+#include &lt;iosfwd&gt;
+#include &lt;optional&gt;
+#include &lt;string&gt;
+#include &lt;vector&gt;
+
+namespace geometrycentral::surface {
+class SurfaceMesh;
+class VertexPositionGeometry;
+}  // namespace geometrycentral::surface
+
+<a class="omd-reference" href="#omd-code-3">@&lt;topology-preflight-interface@&gt;</a>
+
+<a class="omd-reference" href="#omd-code-6">@&lt;geometry-preflight-interface@&gt;</a>
+</code></pre>
+</div>
+</div>
+<h3 id="topological-report-and-policy">Topological report and
+policy</h3>
+<p>The topology report records both the invariants and every failed
+condition. <code>analyze_ricci_topology()</code> gathers that evidence,
+<code>print_ricci_topology_preflight()</code> explains it, and
+<code>require_ricci_topology()</code> turns an unacceptable report into
+a hard boundary for code that requires a flattenable mesh.</p>
+<div class="omd-code-block">
+<div id="omd-code-3" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>topology-preflight-interface</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">struct RicciTopologyPreflight {
+  std::size_t connected_components = 0;
+  std::size_t boundary_loops = 0;
+  std::int64_t euler_characteristic = 0;
+  std::optional&lt;std::int64_t&gt; total_genus;
+
+  bool manifold = false;
+  bool oriented = false;
+  bool triangular = false;
+  std::vector&lt;std::string&gt; failures;
+
+  bool ready() const;
+};
+
+RicciTopologyPreflight analyze_ricci_topology(
+    geometrycentral::surface::SurfaceMesh&amp; mesh);
+
+void print_ricci_topology_preflight(const RicciTopologyPreflight&amp; report,
+                                    std::ostream&amp; output);
+
+void require_ricci_topology(const RicciTopologyPreflight&amp; report);
+</code></pre>
+</div>
+<h5 id="referenced-by-1">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-2">lit/mesh-preflight.html, code block 2</a></li>
+</ul>
+</div>
+<p>The implementation is split into topology and geometry fragments
+below. A single tangle block assembles them into the translation
+unit.</p>
+<div class="omd-code-block">
+<div id="omd-code-4" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>mesh-preflight-source</code>
+</h4>
+<ul>
+<li>tangle: <code>src/mesh_preflight.cpp</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp"><a class="omd-reference" href="#omd-code-5">@&lt;mesh-preflight-topology-source@&gt;</a>
+<a class="omd-reference" href="#omd-code-7">@&lt;mesh-preflight-geometry-source@&gt;</a>
+</code></pre>
+</div>
+</div>
+<h2 id="computing-the-invariants">Computing the invariants</h2>
+<p>Notice that multiple boundary loops are not an error. The cut graph
+is responsible for joining them later. Connectedness and genus are
+stricter: the present implementation starts its planar face traversal
+from one seed face and has no handle/tunnel cuts, so it requires exactly
+one genus-zero component.</p>
+<div class="omd-code-block">
+<div id="omd-code-5" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>mesh-preflight-topology-source</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">#include &quot;mesh_preflight.h&quot;
+
+#include &quot;geometrycentral/surface/surface_mesh.h&quot;
+
+#include &lt;ostream&gt;
+#include &lt;sstream&gt;
+#include &lt;stdexcept&gt;
+
+namespace gcs = geometrycentral::surface;
+
+bool RicciTopologyPreflight::ready() const {
+  return failures.empty();
+}
+
+RicciTopologyPreflight analyze_ricci_topology(gcs::SurfaceMesh&amp; mesh) {
+  RicciTopologyPreflight report;
+  report.connected_components = mesh.nConnectedComponents();
+  report.boundary_loops = mesh.nBoundaryLoops();
+  // Geometry Central&#x27;s manifold helper adds one face per boundary loop.
+  // Ricci Gauss--Bonnet instead needs the uncapped surface value V-E+F.
+  report.euler_characteristic = static_cast&lt;std::int64_t&gt;(mesh.nVertices()) -
+                                static_cast&lt;std::int64_t&gt;(mesh.nEdges()) +
+                                static_cast&lt;std::int64_t&gt;(mesh.nFaces());
+  report.manifold = mesh.isManifold();
+  report.oriented = mesh.isOriented();
+  report.triangular = mesh.isTriangular();
+
+  if (!report.manifold) {
+    report.failures.emplace_back(&quot;the mesh is not a combinatorial 2-manifold&quot;);
+  }
+  if (!report.oriented) {
+    report.failures.emplace_back(
+        &quot;the mesh does not have consistent face orientation&quot;);
+  }
+  if (!report.triangular) {
+    report.failures.emplace_back(
+        &quot;Ricci flow currently requires every face to be a triangle&quot;);
+  }
+  if (report.connected_components != 1) {
+    report.failures.emplace_back(
+        &quot;Ricci flattening requires exactly one connected component&quot;);
+  }
+  if (report.boundary_loops == 0) {
+    report.failures.emplace_back(
+        &quot;boundary flattening requires at least one boundary loop&quot;);
+  }
+
+  if (report.manifold &amp;&amp; report.oriented) {
+    const std::int64_t twice_genus =
+        2 * static_cast&lt;std::int64_t&gt;(report.connected_components) -
+        static_cast&lt;std::int64_t&gt;(report.boundary_loops) -
+        report.euler_characteristic;
+
+    if (twice_genus &lt; 0 || twice_genus % 2 != 0) {
+      report.failures.emplace_back(
+          &quot;mesh counts are inconsistent with an orientable surface&quot;);
+    } else {
+      report.total_genus = twice_genus / 2;
+      if (*report.total_genus != 0) {
+        report.failures.emplace_back(
+            &quot;the current cut graph supports genus-zero surfaces only&quot;);
+      }
+    }
+  }
+
+  return report;
+}
+
+void print_ricci_topology_preflight(const RicciTopologyPreflight&amp; report,
+                                    std::ostream&amp; output) {
+  output &lt;&lt; &quot;Ricci topology preflight: &quot;
+         &lt;&lt; (report.ready() ? &quot;ready&quot; : &quot;not ready&quot;) &lt;&lt; &#x27;\n&#x27;
+         &lt;&lt; &quot;  connected components: &quot; &lt;&lt; report.connected_components &lt;&lt; &#x27;\n&#x27;
+         &lt;&lt; &quot;  boundary loops: &quot; &lt;&lt; report.boundary_loops &lt;&lt; &#x27;\n&#x27;
+         &lt;&lt; &quot;  Euler characteristic: &quot; &lt;&lt; report.euler_characteristic &lt;&lt; &#x27;\n&#x27;
+         &lt;&lt; &quot;  total genus: &quot;;
+  if (report.total_genus) {
+    output &lt;&lt; *report.total_genus;
+  } else {
+    output &lt;&lt; &quot;undetermined&quot;;
+  }
+  output &lt;&lt; &#x27;\n&#x27;;
+
+  for (const std::string&amp; failure : report.failures) {
+    output &lt;&lt; &quot;  failed: &quot; &lt;&lt; failure &lt;&lt; &#x27;\n&#x27;;
+  }
+}
+
+void require_ricci_topology(const RicciTopologyPreflight&amp; report) {
+  if (report.ready()) {
+    return;
+  }
+
+  std::ostringstream message;
+  message &lt;&lt; &quot;Ricci topology preflight failed&quot;;
+  for (const std::string&amp; failure : report.failures) {
+    message &lt;&lt; &quot;\n- &quot; &lt;&lt; failure;
+  }
+  throw std::runtime_error(message.str());
+}
+</code></pre>
+</div>
+<h5 id="referenced-by-2">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-4">lit/mesh-preflight.html, code block 4</a></li>
+</ul>
+</div>
+<p>This report deliberately makes no claims about triangle area, aspect
+ratio, self-intersection, or feature preservation. Those belong to the
+geometric layer of the Step 1 preflight.</p>
+<h1 id="geometric-preflight">Geometric Preflight</h1>
+<p>Topology describes which vertices and faces are connected. Geometry
+assigns a point in <span class="math inline">ℝ<sup>3</sup></span> to
+each vertex and therefore gives every edge a length, every triangle an
+area, and every corner an angle. The Ricci solver needs these quantities
+to define its initial metric.</p>
+<h2 id="a-scale-independent-quality-measure">A scale-independent quality
+measure</h2>
+<p>Absolute area alone is not a useful quality criterion: an otherwise
+identical mesh expressed in millimeters has areas one million times
+larger than when it is expressed in meters. For a triangle with area
+<span class="math inline"><em>A</em></span> and edge lengths <span
+class="math inline"><em>a</em>, <em>b</em>, <em>c</em></span>, we
+use</p>
+<p><span class="math display">$$
+    q = \frac{4\sqrt{3}A}{a^2+b^2+c^2}.
+$$</span></p>
+<p>This value is 1 for an equilateral triangle, approaches 0 as a
+triangle collapses, and does not change under uniform scaling. A value
+below <code>minimum_usable_quality</code> is an error because the
+triangle is numerically degenerate. A value below
+<code>warning_quality</code> is a warning: Ricci flow may still work,
+but the mesh does not satisfy the paper’s recommendation for good aspect
+ratios.</p>
+<p>Geometry Central computes the metric quantities. The application only
+applies the policy thresholds.</p>
+<h2 id="geometric-report-and-policy">Geometric report and policy</h2>
+<p>The geometric layer follows the same evidence-first design. Its
+thresholds separate triangles that are unusable from triangles that are
+merely poor quality; its report likewise separates failures from
+warnings.</p>
+<p><code>VertexPositionGeometry</code> belongs to one particular
+<code>SurfaceMesh</code>. The analyzer accepts both explicitly because
+it traverses the mesh while asking the geometry for metric quantities.
+It therefore verifies that both references describe the same mesh before
+doing any work.</p>
+<div class="omd-code-block">
+<div id="omd-code-6" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>geometry-preflight-interface</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">struct RicciGeometryThresholds {
+  double minimum_usable_quality = 1e-12;
+  double warning_quality = 0.2;
+};
+
+struct RicciGeometryPreflight {
+  std::size_t nonfinite_vertices = 0;
+  std::size_t invalid_edges = 0;
+  std::size_t invalid_faces = 0;
+  std::size_t invalid_corners = 0;
+  std::size_t poor_quality_faces = 0;
+
+  double minimum_edge_length = 0.0;
+  double maximum_edge_length = 0.0;
+  double minimum_face_area = 0.0;
+  double minimum_triangle_quality = 0.0;
+  double minimum_corner_angle_degrees = 0.0;
+
+  std::vector&lt;std::string&gt; failures;
+  std::vector&lt;std::string&gt; warnings;
+
+  bool ready() const;
+};
+
+RicciGeometryPreflight analyze_ricci_geometry(
+    geometrycentral::surface::SurfaceMesh&amp; mesh,
+    geometrycentral::surface::VertexPositionGeometry&amp; geometry,
+    const RicciGeometryThresholds&amp; thresholds = {});
+
+void print_ricci_geometry_preflight(const RicciGeometryPreflight&amp; report,
+                                    std::ostream&amp; output);
+
+void require_ricci_geometry(const RicciGeometryPreflight&amp; report);
+</code></pre>
+</div>
+<h5 id="referenced-by-3">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-2">lit/mesh-preflight.html, code block 2</a></li>
+</ul>
+</div>
+<div class="omd-code-block">
+<div id="omd-code-7" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>mesh-preflight-geometry-source</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">#include &quot;geometrycentral/surface/vertex_position_geometry.h&quot;
+
+#include &lt;algorithm&gt;
+#include &lt;cmath&gt;
+#include &lt;limits&gt;
+
+namespace {
+constexpr double pi = 3.141592653589793238462643383279502884;
+constexpr double radians_to_degrees = 180.0 / pi;
+
+std::string count_message(std::size_t count, const std::string&amp; description) {
+  return std::to_string(count) + &quot; &quot; + description;
+}
+}  // namespace
+
+bool RicciGeometryPreflight::ready() const {
+  return failures.empty();
+}
+
+RicciGeometryPreflight analyze_ricci_geometry(
+    gcs::SurfaceMesh&amp; mesh,
+    gcs::VertexPositionGeometry&amp; geometry,
+    const RicciGeometryThresholds&amp; thresholds) {
+  if (&amp;geometry.mesh != &amp;mesh) {
+    throw std::invalid_argument(
+        &quot;mesh and geometry preflight must use the same mesh&quot;);
+  }
+
+  if (!std::isfinite(thresholds.minimum_usable_quality) ||
+      !std::isfinite(thresholds.warning_quality) ||
+      thresholds.minimum_usable_quality &lt;= 0.0 ||
+      thresholds.warning_quality &lt; thresholds.minimum_usable_quality ||
+      thresholds.warning_quality &gt; 1.0) {
+    throw std::invalid_argument(
+        &quot;triangle-quality thresholds must satisfy &quot;
+        &quot;0 &lt; minimum usable &lt;= warning &lt;= 1&quot;);
+  }
+
+  RicciGeometryPreflight report;
+  report.minimum_edge_length = std::numeric_limits&lt;double&gt;::infinity();
+  report.minimum_face_area = std::numeric_limits&lt;double&gt;::infinity();
+  report.minimum_triangle_quality = std::numeric_limits&lt;double&gt;::infinity();
+  report.minimum_corner_angle_degrees = std::numeric_limits&lt;double&gt;::infinity();
+
+  for (gcs::Vertex vertex : mesh.vertices()) {
+    if (!geometry.vertexPositions[vertex].isFinite()) {
+      ++report.nonfinite_vertices;
+    }
+  }
+
+  if (report.nonfinite_vertices != 0) {
+    report.failures.push_back(count_message(
+        report.nonfinite_vertices, &quot;vertices have non-finite coordinates&quot;));
+    return report;
+  }
+
+  if (!mesh.isTriangular()) {
+    report.failures.emplace_back(
+        &quot;geometric triangle checks require a triangular mesh&quot;);
+    return report;
+  }
+
+  geometry.requireEdgeLengths();
+  geometry.requireFaceAreas();
+  geometry.requireCornerAngles();
+
+  for (gcs::Edge edge : mesh.edges()) {
+    const double length = geometry.edgeLengths[edge];
+    if (!std::isfinite(length) || length &lt;= 0.0) {
+      ++report.invalid_edges;
+      continue;
+    }
+    report.minimum_edge_length = std::min(report.minimum_edge_length, length);
+    report.maximum_edge_length = std::max(report.maximum_edge_length, length);
+  }
+
+  for (gcs::Face face : mesh.faces()) {
+    const double area = geometry.faceAreas[face];
+    double squared_length_sum = 0.0;
+    for (gcs::Edge edge : face.adjacentEdges()) {
+      const double length = geometry.edgeLengths[edge];
+      squared_length_sum += length * length;
+    }
+
+    if (!std::isfinite(area) || area &lt;= 0.0 ||
+        !std::isfinite(squared_length_sum) || squared_length_sum &lt;= 0.0) {
+      ++report.invalid_faces;
+      continue;
+    }
+
+    report.minimum_face_area = std::min(report.minimum_face_area, area);
+    const double quality = 4.0 * std::sqrt(3.0) * area / squared_length_sum;
+    report.minimum_triangle_quality =
+        std::min(report.minimum_triangle_quality, quality);
+
+    if (!std::isfinite(quality) ||
+        quality &lt;= thresholds.minimum_usable_quality) {
+      ++report.invalid_faces;
+    } else if (quality &lt; thresholds.warning_quality) {
+      ++report.poor_quality_faces;
+    }
+
+    for (gcs::Corner corner : face.adjacentCorners()) {
+      const double angle = geometry.cornerAngles[corner];
+      if (!std::isfinite(angle) || angle &lt;= 0.0 || angle &gt;= pi) {
+        ++report.invalid_corners;
+        continue;
+      }
+      report.minimum_corner_angle_degrees = std::min(
+          report.minimum_corner_angle_degrees, angle * radians_to_degrees);
+    }
+  }
+
+  geometry.unrequireCornerAngles();
+  geometry.unrequireFaceAreas();
+  geometry.unrequireEdgeLengths();
+
+  if (report.invalid_edges != 0) {
+    report.failures.push_back(count_message(
+        report.invalid_edges, &quot;edges have zero or non-finite length&quot;));
+  }
+  if (report.invalid_faces != 0) {
+    report.failures.push_back(count_message(
+        report.invalid_faces, &quot;triangles are geometrically degenerate&quot;));
+  }
+  if (report.invalid_corners != 0) {
+    report.failures.push_back(count_message(
+        report.invalid_corners, &quot;triangle corners have invalid angles&quot;));
+  }
+  if (report.poor_quality_faces != 0) {
+    report.warnings.push_back(count_message(
+        report.poor_quality_faces,
+        &quot;triangles have quality below the recommended threshold&quot;));
+  }
+
+  return report;
+}
+
+void print_ricci_geometry_preflight(const RicciGeometryPreflight&amp; report,
+                                    std::ostream&amp; output) {
+  output &lt;&lt; &quot;Ricci geometry preflight: &quot;
+         &lt;&lt; (report.ready() ? &quot;ready&quot; : &quot;not ready&quot;) &lt;&lt; &#x27;\n&#x27;;
+
+  if (std::isfinite(report.minimum_edge_length)) {
+    output &lt;&lt; &quot;  edge length range: [&quot; &lt;&lt; report.minimum_edge_length &lt;&lt; &quot;, &quot;
+           &lt;&lt; report.maximum_edge_length &lt;&lt; &quot;]\n&quot;;
+  }
+  if (std::isfinite(report.minimum_face_area)) {
+    output &lt;&lt; &quot;  minimum triangle area: &quot; &lt;&lt; report.minimum_face_area &lt;&lt; &#x27;\n&#x27;;
+  }
+  if (std::isfinite(report.minimum_triangle_quality)) {
+    output &lt;&lt; &quot;  minimum triangle quality: &quot; &lt;&lt; report.minimum_triangle_quality
+           &lt;&lt; &quot; (1 is equilateral)\n&quot;;
+  }
+  if (std::isfinite(report.minimum_corner_angle_degrees)) {
+    output &lt;&lt; &quot;  minimum corner angle: &quot; &lt;&lt; report.minimum_corner_angle_degrees
+           &lt;&lt; &quot; degrees\n&quot;;
+  }
+
+  for (const std::string&amp; failure : report.failures) {
+    output &lt;&lt; &quot;  failed: &quot; &lt;&lt; failure &lt;&lt; &#x27;\n&#x27;;
+  }
+  for (const std::string&amp; warning : report.warnings) {
+    output &lt;&lt; &quot;  warning: &quot; &lt;&lt; warning &lt;&lt; &#x27;\n&#x27;;
+  }
+}
+
+void require_ricci_geometry(const RicciGeometryPreflight&amp; report) {
+  if (report.ready()) {
+    return;
+  }
+
+  std::ostringstream message;
+  message &lt;&lt; &quot;Ricci geometry preflight failed&quot;;
+  for (const std::string&amp; failure : report.failures) {
+    message &lt;&lt; &quot;\n- &quot; &lt;&lt; failure;
+  }
+  throw std::runtime_error(message.str());
+}
+</code></pre>
+</div>
+<h5 id="referenced-by-4">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-4">lit/mesh-preflight.html, code block 4</a></li>
+</ul>
+</div>
+<h1 id="executable-examples">Executable Examples</h1>
+<p>The test program follows the same topological/geometric progression
+as the chapter. Its root shows that progression without burying it in
+individual assertions.</p>
+<div class="omd-code-block">
+<div id="omd-code-8" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>mesh-preflight-test</code>
+</h4>
+<ul>
+<li>tangle: <code>tests/mesh_preflight_test.cpp</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">#include &quot;mesh_preflight.h&quot;
+
+#include &quot;geometrycentral/surface/manifold_surface_mesh.h&quot;
+#include &quot;geometrycentral/surface/vertex_position_geometry.h&quot;
+
+#include &lt;cmath&gt;
+#include &lt;cstdlib&gt;
+#include &lt;iostream&gt;
+#include &lt;limits&gt;
+#include &lt;stdexcept&gt;
+#include &lt;string&gt;
+#include &lt;vector&gt;
+
+#include &lt;Eigen/Core&gt;
+
+namespace gcs = geometrycentral::surface;
+
+namespace {
+<a class="omd-reference" href="#omd-code-9">@&lt;mesh-preflight-test-support@&gt;</a>
+}  // namespace
+
+int main() {
+  <a class="omd-reference" href="#omd-code-10">@&lt;topology-preflight-examples@&gt;</a>
+  <a class="omd-reference" href="#omd-code-11">@&lt;geometry-quality-examples@&gt;</a>
+  <a class="omd-reference" href="#omd-code-12">@&lt;invalid-geometry-examples@&gt;</a>
+
+  return EXIT_SUCCESS;
+}
+</code></pre>
+</div>
+</div>
+<p>The only test-specific machinery is a compact assertion helper and a
+convenient way to construct Geometry Central meshes from face lists.</p>
+<div class="omd-code-block">
+<div id="omd-code-9" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>mesh-preflight-test-support</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">void expect(bool condition, const std::string&amp; explanation) {
+  if (!condition) {
+    std::cerr &lt;&lt; &quot;Preflight example failed: &quot; &lt;&lt; explanation &lt;&lt; &#x27;\n&#x27;;
+    std::exit(EXIT_FAILURE);
+  }
+}
+
+gcs::ManifoldSurfaceMesh make_mesh(
+    const std::vector&lt;std::vector&lt;std::size_t&gt;&gt;&amp; faces) {
+  return gcs::ManifoldSurfaceMesh(faces);
+}
+</code></pre>
+</div>
+<h5 id="referenced-by-5">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-8">lit/mesh-preflight.html, code block 8</a></li>
+</ul>
+</div>
+<h2 id="topological-examples">Topological examples</h2>
+<p>Small synthetic meshes make the classification equations concrete.
+The disk and annulus emphasize that multiple boundary loops do not imply
+positive genus; the remaining cases each violate one requirement of the
+current solver.</p>
+<div class="omd-code-block">
+<div id="omd-code-10" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>topology-preflight-examples</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">  auto disk = make_mesh({{0, 1, 2}});
+  const RicciTopologyPreflight disk_report = analyze_ricci_topology(disk);
+  expect(disk_report.ready(), &quot;a triangular disk should be accepted&quot;);
+  expect(disk_report.euler_characteristic == 1, &quot;a disk has chi = 1&quot;);
+  expect(disk_report.boundary_loops == 1, &quot;a disk has one boundary&quot;);
+  expect(disk_report.total_genus == 0, &quot;a disk has genus zero&quot;);
+
+  auto annulus = make_mesh({
+      {0, 1, 5},
+      {0, 5, 4},
+      {1, 2, 6},
+      {1, 6, 5},
+      {2, 3, 7},
+      {2, 7, 6},
+      {3, 0, 4},
+      {3, 4, 7},
+  });
+  const RicciTopologyPreflight annulus_report = analyze_ricci_topology(annulus);
+  expect(annulus_report.ready(), &quot;a triangular annulus should be accepted&quot;);
+  expect(annulus_report.euler_characteristic == 0, &quot;an annulus has chi = 0&quot;);
+  expect(annulus_report.boundary_loops == 2,
+         &quot;an annulus has two boundary loops&quot;);
+  expect(annulus_report.total_genus == 0, &quot;an annulus has genus zero&quot;);
+
+  auto disconnected = make_mesh({{0, 1, 2}, {3, 4, 5}});
+  expect(!analyze_ricci_topology(disconnected).ready(),
+         &quot;two disconnected disks should be rejected&quot;);
+
+  auto closed_tetrahedron = make_mesh({
+      {0, 2, 1},
+      {0, 1, 3},
+      {1, 2, 3},
+      {2, 0, 3},
+  });
+  expect(!analyze_ricci_topology(closed_tetrahedron).ready(),
+         &quot;the boundary flattener should reject a closed sphere&quot;);
+
+  auto quadrilateral = make_mesh({{0, 1, 2, 3}});
+  expect(!analyze_ricci_topology(quadrilateral).ready(),
+         &quot;the current Ricci solver should reject polygonal faces&quot;);
+</code></pre>
+</div>
+<h5 id="referenced-by-6">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-8">lit/mesh-preflight.html, code block 8</a></li>
+</ul>
+</div>
+<h2 id="scale-and-triangle-quality">Scale and triangle quality</h2>
+<p>These examples make the quality metric’s normalization visible: an
+equilateral triangle scores one, uniform scaling preserves that score,
+and a skinny but nondegenerate triangle produces a warning rather than a
+failure.</p>
+<div class="omd-code-block">
+<div id="omd-code-11" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>geometry-quality-examples</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">  Eigen::Matrix&lt;double, 3, 3&gt; equilateral_positions;
+  equilateral_positions &lt;&lt; 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.5,
+      std::sqrt(3.0) / 2.0, 0.0;
+  gcs::VertexPositionGeometry equilateral_geometry(disk, equilateral_positions);
+  const RicciGeometryPreflight equilateral_report =
+      analyze_ricci_geometry(disk, equilateral_geometry);
+  expect(equilateral_report.ready(),
+         &quot;an equilateral triangle should be geometrically valid&quot;);
+  expect(std::abs(equilateral_report.minimum_triangle_quality - 1.0) &lt; 1e-12,
+         &quot;an equilateral triangle should have quality one&quot;);
+  expect(equilateral_report.warnings.empty(),
+         &quot;an equilateral triangle should have no quality warning&quot;);
+
+  Eigen::Matrix&lt;double, 3, 3&gt; scaled_positions = 1000.0 * equilateral_positions;
+  gcs::VertexPositionGeometry scaled_geometry(disk, scaled_positions);
+  const RicciGeometryPreflight scaled_report =
+      analyze_ricci_geometry(disk, scaled_geometry);
+  expect(std::abs(scaled_report.minimum_triangle_quality -
+                  equilateral_report.minimum_triangle_quality) &lt; 1e-12,
+         &quot;uniform scaling should not change triangle quality&quot;);
+
+  Eigen::Matrix&lt;double, 3, 3&gt; skinny_positions;
+  skinny_positions &lt;&lt; 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1e-8, 1e-8, 0.0;
+  gcs::VertexPositionGeometry skinny_geometry(disk, skinny_positions);
+  const RicciGeometryPreflight skinny_report =
+      analyze_ricci_geometry(disk, skinny_geometry);
+  expect(skinny_report.ready(),
+         &quot;a skinny but nondegenerate triangle should remain usable&quot;);
+  expect(!skinny_report.warnings.empty(),
+         &quot;a skinny triangle should produce a quality warning&quot;);
+</code></pre>
+</div>
+<h5 id="referenced-by-7">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-8">lit/mesh-preflight.html, code block 8</a></li>
+</ul>
+</div>
+<h2 id="invalid-geometry">Invalid geometry</h2>
+<p>The final examples exercise hard failures: collapsed area, non-finite
+coordinates, and a geometry object paired with a mesh it does not belong
+to. The ownership check matters even when the two meshes happen to have
+identical numbers of vertices.</p>
+<div class="omd-code-block">
+<div id="omd-code-12" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>invalid-geometry-examples</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">  Eigen::Matrix&lt;double, 3, 3&gt; collinear_positions;
+  collinear_positions &lt;&lt; 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 2.0, 0.0, 0.0;
+  gcs::VertexPositionGeometry collinear_geometry(disk, collinear_positions);
+  expect(!analyze_ricci_geometry(disk, collinear_geometry).ready(),
+         &quot;a zero-area triangle should be rejected&quot;);
+
+  Eigen::Matrix&lt;double, 3, 3&gt; nonfinite_positions = equilateral_positions;
+  nonfinite_positions(2, 1) = std::numeric_limits&lt;double&gt;::quiet_NaN();
+  gcs::VertexPositionGeometry nonfinite_geometry(disk, nonfinite_positions);
+  expect(!analyze_ricci_geometry(disk, nonfinite_geometry).ready(),
+         &quot;a non-finite vertex coordinate should be rejected&quot;);
+
+  auto other_disk = make_mesh({{0, 1, 2}});
+  gcs::VertexPositionGeometry other_geometry(other_disk, equilateral_positions);
+  bool rejected_mismatched_geometry = false;
+  try {
+    analyze_ricci_geometry(disk, other_geometry);
+  } catch (const std::invalid_argument&amp;) {
+    rejected_mismatched_geometry = true;
+  }
+  expect(rejected_mismatched_geometry,
+         &quot;geometry from another mesh should be rejected&quot;);
+</code></pre>
+</div>
+<h5 id="referenced-by-8">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-8">lit/mesh-preflight.html, code block 8</a></li>
+</ul>
+</div>
+
+      </main>
+    </body>
+    </html>
+    

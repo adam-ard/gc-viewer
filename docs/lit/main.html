@@ -1,0 +1,328 @@
+<!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>lit/main</title>
+      <style>
+        :root {
+          color-scheme: light dark;
+          --page: #f7f5ef;
+          --panel: #ffffff;
+          --text: #27251f;
+          --muted: #6d685c;
+          --line: #d8d2c4;
+          --accent: #087f5b;
+          --block: #edf5f1;
+          --block-line: #b8d2c6;
+          --code: #e8f0ec;
+          --code-line: #b8d2c6;
+        }
+        @media (prefers-color-scheme: dark) {
+          :root {
+            --page: #171815;
+            --panel: #20221e;
+            --text: #e9e5da;
+            --muted: #aaa394;
+            --line: #3b3e36;
+            --accent: #63e6be;
+            --block: #18251f;
+            --block-line: #365247;
+            --code: #19221e;
+            --code-line: #365247;
+          }
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+          margin: 0;
+          background: var(--page);
+          color: var(--text);
+          font: 17px/1.65 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        main {
+          width: min(100% - 2rem, 980px);
+          margin: 2rem auto 5rem;
+          padding: clamp(1.25rem, 4vw, 3.5rem);
+          background: var(--panel);
+          border: 1px solid var(--line);
+          border-radius: 18px;
+          box-shadow: 0 18px 60px rgb(0 0 0 / 8%);
+        }
+        h1, h2, h3, h4, h5 { line-height: 1.25; scroll-margin-top: 1rem; }
+        .omd-code-block {
+          position: relative;
+          margin: 3.5rem 0;
+          padding: 1.75rem 1.4rem 1.25rem;
+          background: var(--block);
+          border: 1px solid var(--block-line);
+          border-radius: 14px;
+        }
+        .omd-code-anchor {
+          scroll-margin-top: 1rem;
+        }
+        .omd-code-title {
+          position: absolute;
+          top: 0;
+          left: 1.4rem;
+          transform: translateY(-50%);
+          margin: 0;
+          padding: 0.28rem 0.8rem;
+          background: var(--block);
+          border: 1px solid var(--block-line);
+          border-radius: 999px;
+          box-shadow: 0 3px 10px rgb(0 0 0 / 8%);
+          font-size: 1rem;
+          letter-spacing: -0.01em;
+        }
+        .omd-code-title code {
+          padding: 0;
+          color: var(--text);
+          background: transparent;
+        }
+        .omd-code-title.unnamed {
+          color: var(--muted);
+          font-weight: 500;
+        }
+        a { color: var(--accent); text-underline-offset: 0.16em; }
+        pre {
+          overflow-x: auto;
+          padding: 1.1rem 1.25rem;
+          background: var(--code);
+          border: 1px solid var(--code-line);
+          border-radius: 10px;
+          line-height: 1.5;
+        }
+        .omd-code-panel {
+          position: relative;
+          margin: 1.75rem 0 1rem;
+        }
+        .omd-code-panel pre {
+          margin: 0;
+        }
+        .omd-code-panel.has-language pre {
+          padding-top: 1.65rem;
+        }
+        .omd-language-label {
+          position: absolute;
+          top: 0;
+          left: 1rem;
+          z-index: 1;
+          transform: translateY(-50%);
+          padding: 0.2rem 0.65rem;
+          color: var(--text);
+          background: var(--code);
+          border: 1px solid var(--code-line);
+          border-radius: 999px;
+          font: 600 0.82rem/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+        }
+        code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+        :not(pre) > code {
+          padding: 0.12rem 0.35rem;
+          background: var(--code);
+          border-radius: 5px;
+        }
+        pre .omd-reference {
+          padding: 0.08em 0.18em;
+          color: var(--accent);
+          background: color-mix(in srgb, var(--accent) 13%, transparent);
+          border-radius: 4px;
+          font-weight: 700;
+        }
+        blockquote {
+          margin-left: 0;
+          padding-left: 1rem;
+          color: var(--muted);
+          border-left: 4px solid var(--line);
+        }
+        @media (max-width: 640px) {
+          main { width: 100%; margin: 0; border: 0; border-radius: 0; }
+        }
+      </style>
+    </head>
+    <body>
+      <main>
+    <h1 id="executable-assembly">Executable Assembly</h1>
+<p>This file is the top-level outline of the viewer executable. It
+assembles feature-specific definitions and dependencies from the
+literate sections that explain them; the only implementation logic kept
+here is the process boundary: parse the command line, run the viewer,
+and translate exceptions into a nonzero exit status.</p>
+<h1 id="viewer-pipeline">Viewer Pipeline</h1>
+<p>After command-line validation, the viewer lifecycle owns mesh and
+window setup, while surface analysis owns the geometric quantities
+derived from that mesh. Reading the callouts from top to bottom gives
+the executable’s operational story. Each stage leaves the data needed by
+the stages below it in the shared scope of <code>main()</code>.</p>
+<p>The default manifold mode runs the complete analysis and flattening
+workflow. The <code>--nonmanifold</code> option deliberately selects an
+inspection-only path: Polyscope displays the loaded mesh, but algorithms
+whose connectivity assumptions require a manifold are not constructed or
+exposed in the UI.</p>
+<div class="omd-code-block">
+<div id="omd-code-1" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>pipeline-code</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp"><a class="omd-reference" href="viewer.html#omd-code-3">@&lt;initialize-viewer-state@&gt;</a>
+
+<a class="omd-reference" href="viewer.html#omd-code-4">@&lt;load-mesh@&gt;</a>
+
+<a class="omd-reference" href="viewer.html#omd-code-5">@&lt;inspect-mesh@&gt;</a>
+
+<a class="omd-reference" href="viewer.html#omd-code-6">@&lt;initialize-polyscope@&gt;</a>
+<a class="omd-reference" href="viewer.html#omd-code-7">@&lt;register-mesh@&gt;</a>
+
+if (options.require_manifold) {
+  <a class="omd-reference" href="surface-analysis.html#omd-code-3">@&lt;compute-cross-field@&gt;</a>
+  <a class="omd-reference" href="surface-analysis.html#omd-code-4">@&lt;add-mesh-quantities@&gt;</a>
+
+  <a class="omd-reference" href="surface-analysis.html#omd-code-5">@&lt;report-frame-field@&gt;</a>
+
+  <a class="omd-reference" href="viewer.html#omd-code-8">@&lt;configure-flattening@&gt;</a>
+}
+
+<a class="omd-reference" href="viewer.html#omd-code-9">@&lt;show-viewer@&gt;</a>
+</code></pre>
+</div>
+<h5 id="referenced-by">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-5">lit/main.html, code block 5</a></li>
+</ul>
+</div>
+<h1 id="includes">Includes</h1>
+<p>Each contributing section owns the headers required by its code.
+Repeated headers are intentional: local dependency ownership is more
+useful here than deduplicating a harmless preprocessor operation.</p>
+<div class="omd-code-block">
+<div id="omd-code-2" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>main-includes</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp"><a class="omd-reference" href="cmdline.html#omd-code-1">@&lt;cmdline-includes@&gt;</a>
+<a class="omd-reference" href="surface-analysis.html#omd-code-1">@&lt;surface-analysis-includes@&gt;</a>
+<a class="omd-reference" href="viewer.html#omd-code-1">@&lt;viewer-includes@&gt;</a>
+
+&lt;cstdlib&gt;
+&lt;exception&gt;
+&lt;iostream&gt;
+</code></pre>
+</div>
+<h5 id="referenced-by-1">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-5">lit/main.html, code block 5</a></li>
+</ul>
+</div>
+<h1 id="namespace-aliases">Namespace Aliases</h1>
+<p>These aliases apply to the entire generated <code>main.cpp</code>
+translation unit. They keep Geometry Central’s mathematical and
+surface-mesh types readable throughout the executable without importing
+individual library names into the global namespace.</p>
+<div class="omd-code-block">
+<div id="omd-code-3" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>main-namespace-aliases</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">namespace gc = geometrycentral;
+namespace gcs = geometrycentral::surface;
+</code></pre>
+</div>
+<h5 id="referenced-by-2">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-5">lit/main.html, code block 5</a></li>
+</ul>
+</div>
+<h1 id="file-local-definitions">File-local Definitions</h1>
+<p>Each contributing section owns its private diagnostic helpers. This
+aggregate keeps their details in the files that explain them while
+giving the executable assembly a single definition callout.</p>
+<div class="omd-code-block">
+<div id="omd-code-4" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>main-defs</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp"><a class="omd-reference" href="cmdline.html#omd-code-2">@&lt;cmdline-defs@&gt;</a>
+<a class="omd-reference" href="surface-analysis.html#omd-code-2">@&lt;surface-analysis-defs@&gt;</a>
+<a class="omd-reference" href="viewer.html#omd-code-2">@&lt;viewer-defs@&gt;</a>
+</code></pre>
+</div>
+<h5 id="referenced-by-3">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-5">lit/main.html, code block 5</a></li>
+</ul>
+</div>
+<h1 id="main-file">Main File</h1>
+<p>Expected command-line mistakes are still reported locally by the
+parser. Placing that work inside the outer <code>try</code> also ensures
+that any unexpected parser failure remains inside the executable’s
+single exception boundary.</p>
+<p>The helper definitions assembled below are implementation details of
+the executable. The anonymous namespace gives them internal linkage,
+preventing their names from colliding with definitions in other
+translation units. <code>main()</code> remains outside because C++
+requires it in the global namespace.</p>
+<div class="omd-code-block">
+<div id="omd-code-5" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>main</code>
+</h4>
+<ul>
+<li>tangle: <code>src/main.cpp</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">#include <a class="omd-reference" href="#omd-code-2">@&lt;main-includes@&gt;</a>
+
+<a class="omd-reference" href="#omd-code-3">@&lt;main-namespace-aliases@&gt;</a>
+
+namespace {
+<a class="omd-reference" href="#omd-code-4">@&lt;main-defs@&gt;</a>
+}  // namespace
+
+int main(int argc, char** argv) {
+  try {
+    <a class="omd-reference" href="cmdline.html#omd-code-6">@&lt;handle-cmdline@&gt;</a>
+    <a class="omd-reference" href="#omd-code-1">@&lt;pipeline-code@&gt;</a>
+  } catch (const std::exception&amp; error) {
+    std::cerr &lt;&lt; &quot;Error: &quot; &lt;&lt; error.what() &lt;&lt; &#x27;\n&#x27;;
+    return EXIT_FAILURE;
+  }
+
+  return EXIT_SUCCESS;
+}
+</code></pre>
+</div>
+</div>
+
+      </main>
+    </body>
+    </html>
+    

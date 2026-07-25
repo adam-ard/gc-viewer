@@ -1,0 +1,1020 @@
+<!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>lit/cone-targets</title>
+      <style>
+        :root {
+          color-scheme: light dark;
+          --page: #f7f5ef;
+          --panel: #ffffff;
+          --text: #27251f;
+          --muted: #6d685c;
+          --line: #d8d2c4;
+          --accent: #087f5b;
+          --block: #edf5f1;
+          --block-line: #b8d2c6;
+          --code: #e8f0ec;
+          --code-line: #b8d2c6;
+        }
+        @media (prefers-color-scheme: dark) {
+          :root {
+            --page: #171815;
+            --panel: #20221e;
+            --text: #e9e5da;
+            --muted: #aaa394;
+            --line: #3b3e36;
+            --accent: #63e6be;
+            --block: #18251f;
+            --block-line: #365247;
+            --code: #19221e;
+            --code-line: #365247;
+          }
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+          margin: 0;
+          background: var(--page);
+          color: var(--text);
+          font: 17px/1.65 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        main {
+          width: min(100% - 2rem, 980px);
+          margin: 2rem auto 5rem;
+          padding: clamp(1.25rem, 4vw, 3.5rem);
+          background: var(--panel);
+          border: 1px solid var(--line);
+          border-radius: 18px;
+          box-shadow: 0 18px 60px rgb(0 0 0 / 8%);
+        }
+        h1, h2, h3, h4, h5 { line-height: 1.25; scroll-margin-top: 1rem; }
+        .omd-code-block {
+          position: relative;
+          margin: 3.5rem 0;
+          padding: 1.75rem 1.4rem 1.25rem;
+          background: var(--block);
+          border: 1px solid var(--block-line);
+          border-radius: 14px;
+        }
+        .omd-code-anchor {
+          scroll-margin-top: 1rem;
+        }
+        .omd-code-title {
+          position: absolute;
+          top: 0;
+          left: 1.4rem;
+          transform: translateY(-50%);
+          margin: 0;
+          padding: 0.28rem 0.8rem;
+          background: var(--block);
+          border: 1px solid var(--block-line);
+          border-radius: 999px;
+          box-shadow: 0 3px 10px rgb(0 0 0 / 8%);
+          font-size: 1rem;
+          letter-spacing: -0.01em;
+        }
+        .omd-code-title code {
+          padding: 0;
+          color: var(--text);
+          background: transparent;
+        }
+        .omd-code-title.unnamed {
+          color: var(--muted);
+          font-weight: 500;
+        }
+        a { color: var(--accent); text-underline-offset: 0.16em; }
+        pre {
+          overflow-x: auto;
+          padding: 1.1rem 1.25rem;
+          background: var(--code);
+          border: 1px solid var(--code-line);
+          border-radius: 10px;
+          line-height: 1.5;
+        }
+        .omd-code-panel {
+          position: relative;
+          margin: 1.75rem 0 1rem;
+        }
+        .omd-code-panel pre {
+          margin: 0;
+        }
+        .omd-code-panel.has-language pre {
+          padding-top: 1.65rem;
+        }
+        .omd-language-label {
+          position: absolute;
+          top: 0;
+          left: 1rem;
+          z-index: 1;
+          transform: translateY(-50%);
+          padding: 0.2rem 0.65rem;
+          color: var(--text);
+          background: var(--code);
+          border: 1px solid var(--code-line);
+          border-radius: 999px;
+          font: 600 0.82rem/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+        }
+        code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+        :not(pre) > code {
+          padding: 0.12rem 0.35rem;
+          background: var(--code);
+          border-radius: 5px;
+        }
+        pre .omd-reference {
+          padding: 0.08em 0.18em;
+          color: var(--accent);
+          background: color-mix(in srgb, var(--accent) 13%, transparent);
+          border-radius: 4px;
+          font-weight: 700;
+        }
+        blockquote {
+          margin-left: 0;
+          padding-left: 1rem;
+          color: var(--muted);
+          border-left: 4px solid var(--line);
+        }
+        @media (max-width: 640px) {
+          main { width: 100%; margin: 0; border: 0; border-radius: 0; }
+        }
+      </style>
+    </head>
+    <body>
+      <main>
+    <h1 id="from-frame-field-indices-to-ricci-cone-targets">From Frame-Field
+Indices to Ricci Cone Targets</h1>
+<p>The fourfold direction field gives more than a visual suggestion of
+where a quadrilateral layout might have extraordinary vertices. Its
+integer index is also the natural unit for prescribing curvature to
+Ricci flow.</p>
+<h2 id="index-and-curvature">Index and curvature</h2>
+<p>An <span class="math inline"><em>n</em></span>-symmetric field stores
+directions modulo a rotation of <span
+class="math inline">2<em>π</em>/<em>n</em></span>. Geometry Central
+reports an integer field index <span
+class="math inline"><em>I</em>(<em>p</em>)</span>, while the ordinary
+topological index is <span
+class="math inline"><em>I</em>(<em>p</em>)/<em>n</em></span>. A cone
+representing that singularity therefore has target curvature</p>
+<p><span class="math display">$$
+    \bar K(p)=\frac{2\pi}{n}I(p).
+$$</span></p>
+<p>For the fourfold field used by a quadrilateral layout this
+becomes</p>
+<p><span class="math display">$$
+    \bar K(p)=\frac{\pi}{2}I(p).
+$$</span></p>
+<p>Thus an index <span class="math inline"> + 1</span> suggests a <span
+class="math inline"> + <em>π</em>/2</span> cone and an index <span
+class="math inline"> − 1</span> suggests a <span
+class="math inline"> − <em>π</em>/2</span> cone. Zero-index vertices
+remain regular and need not appear in the target file.</p>
+<h2 id="gaussbonnet-residual">Gauss–Bonnet residual</h2>
+<p>The target curvatures of a surface must sum to <span
+class="math inline">2<em>π</em><em>χ</em></span>. In index units,</p>
+<p><span
+class="math display">∑<sub><em>p</em></sub><em>I</em>(<em>p</em>) = <em>n</em><em>χ</em>.</span></p>
+<p>For closed fields this is the familiar Poincare–Hopf relation. On an
+open mesh, the boundary-aligned field and Geometry Central’s per-vertex
+index rounding do not necessarily make the selected nonzero indices sum
+to <span class="math inline"><em>n</em><em>χ</em></span>. We retain the
+solver’s <em>additive</em> target policy during this intermediate stage:
+exact quarter-turn targets are assigned at frame singularities, and the
+remaining curvature is distributed over unselected boundary vertices.
+The report exposes that residual explicitly. A later manual editor
+should aim to make it zero.</p>
+<p>Reducing the cone count and changing the total index are distinct
+operations. For example, removing a <span
+class="math inline"> + 1</span> and a <span
+class="math inline"> − 1</span> cone reduces the number of constraints
+without changing their sum. Alternatively, two nearby <span
+class="math inline"> + 1</span> suggestions can be represented
+experimentally by one <span class="math inline"> + 2</span>
+prescription. Keeping the index sum fixed keeps the same Gauss–Bonnet
+boundary budget; changing it deliberately transfers curvature to or from
+the unselected boundary vertices in additive mode. A smaller cone count
+often gives the continuation solver an easier problem, although a
+large-magnitude cone can itself be difficult, so the editor exposes both
+quantities rather than promising that cone count alone predicts
+convergence.</p>
+<h2 id="public-representation">Public representation</h2>
+<p>The dense vertex index is important. Geometry Central may remove
+unused input vertices while loading, and mesh mutation can make raw
+handle indices sparse. <code>getVertexIndices()</code> supplies the
+canonical dense enumeration used when the normalized solver input is
+written.</p>
+<p>Consumers use the self-contained public header; implementation
+dependencies remain private to the generated source file.</p>
+<div class="omd-code-block">
+<div id="omd-code-1" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-targets-interface-includes</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">&quot;cone_targets.h&quot;
+</code></pre>
+</div>
+<h5 id="referenced-by">Referenced by</h5>
+<ul>
+<li><a
+href="surface-analysis.html#omd-code-1">lit/surface-analysis.html, code
+block 1</a></li>
+</ul>
+</div>
+<h1 id="public-header-assembly">Public header assembly</h1>
+<p>The public header combines two representations and the operations
+that create, serialize, and report them. Keeping this assembly shallow
+makes the generated header conventional while allowing the literate
+source to explain each concept next to its definition.</p>
+<div class="omd-code-block">
+<div id="omd-code-2" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-targets-header</code>
+</h4>
+<ul>
+<li>tangle: <code>src/cone_targets.h</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">#pragma once
+
+#include &quot;geometrycentral/surface/surface_mesh.h&quot;
+
+#include &lt;cstddef&gt;
+#include &lt;cstdint&gt;
+#include &lt;iosfwd&gt;
+#include &lt;vector&gt;
+
+<a class="omd-reference" href="#omd-code-3">@&lt;cone-target-snapshot-types@&gt;</a>
+
+<a class="omd-reference" href="#omd-code-4">@&lt;editable-cone-target-types@&gt;</a>
+
+<a class="omd-reference" href="#omd-code-5">@&lt;cone-target-operations@&gt;</a>
+</code></pre>
+</div>
+</div>
+<h2 id="immutable-solver-snapshot">Immutable solver snapshot</h2>
+<p><code>FrameFieldConeTarget</code> is one prescribed cone in
+solver-ready form: a dense zero-based vertex index, an integer index
+prescription, and the corresponding curvature in radians.
+<code>FrameFieldConeTargets</code> packages those cones with both sides
+of the Gauss–Bonnet budget. This immutable-by-convention snapshot is
+what one solver run and its diagnostics share.</p>
+<p>The index sums are integral, so <code>satisfies_gauss_bonnet()</code>
+can test them exactly instead of comparing rounded curvature values.</p>
+<div class="omd-code-block">
+<div id="omd-code-3" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-target-snapshot-types</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">struct FrameFieldConeTarget {
+  std::size_t vertex_index = 0;
+  int frame_index = 0;
+  double curvature_radians = 0.0;
+};
+
+struct FrameFieldConeTargets {
+  int field_symmetry = 0;
+  std::int64_t euler_characteristic = 0;
+  std::int64_t selected_index_sum = 0;
+  std::int64_t required_index_sum = 0;
+  double selected_curvature_sum = 0.0;
+  double required_curvature_sum = 0.0;
+  double curvature_residual = 0.0;
+  std::vector&lt;FrameFieldConeTarget&gt; targets;
+
+  bool satisfies_gauss_bonnet() const;
+};
+</code></pre>
+</div>
+<h5 id="referenced-by-1">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-2">lit/cone-targets.html, code block 2</a></li>
+</ul>
+</div>
+<h2 id="editable-candidate-set">Editable candidate set</h2>
+<p>The editor retains Geometry Central’s original suggestion
+independently from the current prescription. Selection is a third,
+orthogonal state: deselecting a candidate temporarily excludes it
+without discarding either index value.</p>
+<p><code>active_targets()</code> freezes the current choices into the
+solver snapshot above. The remaining operations support UI counts and
+explicit bulk edits.</p>
+<div class="omd-code-block">
+<div id="omd-code-4" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>editable-cone-target-types</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">struct EditableConeTarget {
+  std::size_t vertex_index = 0;
+  int original_frame_index = 0;
+  int prescribed_index = 0;
+  bool selected = true;
+};
+
+struct EditableConeTargets {
+  int field_symmetry = 0;
+  std::int64_t euler_characteristic = 0;
+  std::int64_t required_index_sum = 0;
+  std::vector&lt;EditableConeTarget&gt; candidates;
+
+  FrameFieldConeTargets active_targets() const;
+  std::size_t active_count() const;
+  void reset_to_frame_field();
+  void deselect_all();
+};
+</code></pre>
+</div>
+<h5 id="referenced-by-2">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-2">lit/cone-targets.html, code block 2</a></li>
+</ul>
+</div>
+<h2 id="public-operations">Public operations</h2>
+<p>The two derivation functions offer either an immediate snapshot or an
+editable candidate set from the same Geometry Central field indices.
+Serialization writes the Ricci solver’s OBJ-indexed target format, while
+reporting provides a human-readable account of the same curvature
+budget.</p>
+<div class="omd-code-block">
+<div id="omd-code-5" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-target-operations</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">FrameFieldConeTargets derive_frame_field_cone_targets(
+    geometrycentral::surface::SurfaceMesh&amp; mesh,
+    const geometrycentral::surface::VertexData&lt;int&gt;&amp; frame_indices,
+    int field_symmetry);
+
+EditableConeTargets derive_editable_cone_targets(
+    geometrycentral::surface::SurfaceMesh&amp; mesh,
+    const geometrycentral::surface::VertexData&lt;int&gt;&amp; frame_indices,
+    int field_symmetry);
+
+void write_obj_cone_targets(const FrameFieldConeTargets&amp; targets,
+                            std::ostream&amp; output);
+
+void print_frame_field_cone_targets(const FrameFieldConeTargets&amp; targets,
+                                    std::ostream&amp; output);
+</code></pre>
+</div>
+<h5 id="referenced-by-3">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-2">lit/cone-targets.html, code block 2</a></li>
+</ul>
+</div>
+<h2 id="implementation-assembly">Implementation assembly</h2>
+<p>The implementation follows the transformation from discrete field
+indices to solver input. Private utilities establish the curvature unit
+and assemble snapshots; public operations then expose editing, initial
+derivation, and output.</p>
+<div class="omd-code-block">
+<div id="omd-code-6" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-targets-source</code>
+</h4>
+<ul>
+<li>tangle: <code>src/cone_targets.cpp</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">#include &quot;cone_targets.h&quot;
+
+#include &lt;cmath&gt;
+#include &lt;iomanip&gt;
+#include &lt;ostream&gt;
+#include &lt;stdexcept&gt;
+
+namespace gcs = geometrycentral::surface;
+
+<a class="omd-reference" href="#omd-code-7">@&lt;cone-target-private-definitions@&gt;</a>
+
+<a class="omd-reference" href="#omd-code-9">@&lt;cone-target-budget-check@&gt;</a>
+
+<a class="omd-reference" href="#omd-code-11">@&lt;editable-cone-target-operations@&gt;</a>
+
+<a class="omd-reference" href="#omd-code-12">@&lt;derive-cone-targets@&gt;</a>
+
+<a class="omd-reference" href="#omd-code-13">@&lt;cone-target-output@&gt;</a>
+</code></pre>
+</div>
+</div>
+<h2 id="private-implementation-boundary">Private implementation
+boundary</h2>
+<p>The anonymous namespace gives its contents internal linkage: these
+names are visible throughout <code>cone_targets.cpp</code> but cannot
+collide with names in another translation unit. It contains the
+conversion constant and snapshot-collection helper because neither
+belongs to the public interface. Public member definitions remain
+outside this namespace because their classes are declared in the global
+namespace by the header.</p>
+<div class="omd-code-block">
+<div id="omd-code-7" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-target-private-definitions</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">namespace {
+<a class="omd-reference" href="#omd-code-8">@&lt;cone-target-curvature-constant@&gt;</a>
+
+<a class="omd-reference" href="#omd-code-10">@&lt;collect-active-cone-targets@&gt;</a>
+}  // namespace
+</code></pre>
+</div>
+<h5 id="referenced-by-4">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-6">lit/cone-targets.html, code block 6</a></li>
+</ul>
+</div>
+<h2 id="curvature-unit">Curvature unit</h2>
+<p>The conversion from index units to radians requires <span
+class="math inline"><em>π</em></span>. Keeping the constant inside the
+private implementation boundary makes it an implementation detail rather
+than part of the public cone-target interface.</p>
+<div class="omd-code-block">
+<div id="omd-code-8" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-target-curvature-constant</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">constexpr double pi = 3.141592653589793238462643383279502884;
+</code></pre>
+</div>
+<h5 id="referenced-by-5">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-7">lit/cone-targets.html, code block 7</a></li>
+</ul>
+</div>
+<h2 id="check-the-topological-budget">Check the topological budget</h2>
+<p>Gauss–Bonnet satisfaction is checked in exact integer index units.
+The equivalent curvature values are floating-point quantities and are
+retained for solver input and human-readable diagnostics.</p>
+<div class="omd-code-block">
+<div id="omd-code-9" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-target-budget-check</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">bool FrameFieldConeTargets::satisfies_gauss_bonnet() const {
+  return selected_index_sum == required_index_sum;
+}
+</code></pre>
+</div>
+<h5 id="referenced-by-6">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-6">lit/cone-targets.html, code block 6</a></li>
+</ul>
+</div>
+<h2 id="freeze-active-candidates">Freeze active candidates</h2>
+<p>Each selected, nonzero prescription contributes <span
+class="math inline">2<em>π</em>/<em>n</em></span> radians per index
+unit. The private collector calculates both the selected cone curvature
+and the remaining Gauss–Bonnet budget, producing a self-contained
+snapshot for one solver run.</p>
+<div class="omd-code-block">
+<div id="omd-code-10" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>collect-active-cone-targets</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">FrameFieldConeTargets collect_active_targets(
+    int field_symmetry,
+    std::int64_t euler_characteristic,
+    const std::vector&lt;EditableConeTarget&gt;&amp; candidates) {
+  if (field_symmetry &lt;= 0) {
+    throw std::invalid_argument(&quot;field symmetry must be a positive integer&quot;);
+  }
+
+  FrameFieldConeTargets result;
+  result.field_symmetry = field_symmetry;
+  result.euler_characteristic = euler_characteristic;
+  result.required_index_sum =
+      static_cast&lt;std::int64_t&gt;(field_symmetry) * euler_characteristic;
+
+  const double curvature_per_index =
+      2.0 * pi / static_cast&lt;double&gt;(field_symmetry);
+  for (const EditableConeTarget&amp; candidate : candidates) {
+    if (!candidate.selected || candidate.prescribed_index == 0) {
+      continue;
+    }
+
+    const double curvature =
+        curvature_per_index * static_cast&lt;double&gt;(candidate.prescribed_index);
+    result.targets.push_back(
+        {candidate.vertex_index, candidate.prescribed_index, curvature});
+    result.selected_index_sum += candidate.prescribed_index;
+    result.selected_curvature_sum += curvature;
+  }
+
+  result.required_curvature_sum =
+      2.0 * pi * static_cast&lt;double&gt;(euler_characteristic);
+  result.curvature_residual =
+      result.required_curvature_sum - result.selected_curvature_sum;
+  return result;
+}
+</code></pre>
+</div>
+<h5 id="referenced-by-7">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-7">lit/cone-targets.html, code block 7</a></li>
+</ul>
+</div>
+<h2 id="edit-without-losing-the-frame-field-suggestion">Edit without
+losing the frame-field suggestion</h2>
+<p>The editable representation deliberately separates two ideas:</p>
+<ul>
+<li><code>original_frame_index</code> records Geometry Central’s
+immutable suggestion.</li>
+<li><code>prescribed_index</code> records the value the user currently
+wants Ricci flow to realize.</li>
+</ul>
+<p>Deselection does not destroy either value. Turning a difficult cone
+off and back on therefore recovers the user’s edited value, while
+<em>reset</em> explicitly returns the entire prescription to the
+computed frame field. <code>active_targets()</code> freezes the current
+state so subsequent UI edits cannot change the meaning of a solver run
+already in progress.</p>
+<div class="omd-code-block">
+<div id="omd-code-11" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>editable-cone-target-operations</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">FrameFieldConeTargets EditableConeTargets::active_targets() const {
+  return collect_active_targets(field_symmetry, euler_characteristic,
+                                candidates);
+}
+
+std::size_t EditableConeTargets::active_count() const {
+  std::size_t count = 0;
+  for (const EditableConeTarget&amp; candidate : candidates) {
+    if (candidate.selected &amp;&amp; candidate.prescribed_index != 0) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+void EditableConeTargets::reset_to_frame_field() {
+  for (EditableConeTarget&amp; candidate : candidates) {
+    candidate.prescribed_index = candidate.original_frame_index;
+    candidate.selected = candidate.original_frame_index != 0;
+  }
+}
+
+void EditableConeTargets::deselect_all() {
+  for (EditableConeTarget&amp; candidate : candidates) {
+    candidate.selected = false;
+  }
+}
+</code></pre>
+</div>
+<h5 id="referenced-by-8">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-6">lit/cone-targets.html, code block 6</a></li>
+</ul>
+</div>
+<h2 id="derive-candidates-from-geometry-central">Derive candidates from
+Geometry Central</h2>
+<p>The frame indices and output vertex identifiers must refer to the
+same mesh. Geometry Central’s <code>VertexData</code> retains its owning
+mesh, allowing this relationship to be checked explicitly before
+conversion.</p>
+<p>The Euler characteristic is computed combinatorially as <span
+class="math inline"><em>χ</em> = |<em>V</em>| − |<em>E</em>| + |<em>F</em>|</span>.
+<code>getVertexIndices()</code> then supplies a dense zero-based
+enumeration independent of internal handle indices. Only nonzero field
+indices become editable candidates or explicit solver cones.</p>
+<div class="omd-code-block">
+<div id="omd-code-12" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>derive-cone-targets</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">FrameFieldConeTargets derive_frame_field_cone_targets(
+    gcs::SurfaceMesh&amp; mesh,
+    const gcs::VertexData&lt;int&gt;&amp; frame_indices,
+    int field_symmetry) {
+  if (frame_indices.getMesh() != &amp;mesh) {
+    throw std::invalid_argument(
+        &quot;frame indices and cone targets must use the same mesh&quot;);
+  }
+  if (field_symmetry &lt;= 0) {
+    throw std::invalid_argument(&quot;field symmetry must be a positive integer&quot;);
+  }
+
+  FrameFieldConeTargets result;
+  result.field_symmetry = field_symmetry;
+  result.euler_characteristic = static_cast&lt;std::int64_t&gt;(mesh.nVertices()) -
+                                static_cast&lt;std::int64_t&gt;(mesh.nEdges()) +
+                                static_cast&lt;std::int64_t&gt;(mesh.nFaces());
+  result.required_index_sum =
+      static_cast&lt;std::int64_t&gt;(field_symmetry) * result.euler_characteristic;
+
+  const double curvature_per_index =
+      2.0 * pi / static_cast&lt;double&gt;(field_symmetry);
+  const gcs::VertexData&lt;std::size_t&gt; dense_indices = mesh.getVertexIndices();
+
+  for (gcs::Vertex vertex : mesh.vertices()) {
+    const int index = frame_indices[vertex];
+    result.selected_index_sum += index;
+    if (index == 0) {
+      continue;
+    }
+
+    const double curvature = curvature_per_index * static_cast&lt;double&gt;(index);
+    result.targets.push_back({dense_indices[vertex], index, curvature});
+    result.selected_curvature_sum += curvature;
+  }
+
+  result.required_curvature_sum =
+      2.0 * pi * static_cast&lt;double&gt;(result.euler_characteristic);
+  result.curvature_residual =
+      result.required_curvature_sum - result.selected_curvature_sum;
+  return result;
+}
+
+EditableConeTargets derive_editable_cone_targets(
+    gcs::SurfaceMesh&amp; mesh,
+    const gcs::VertexData&lt;int&gt;&amp; frame_indices,
+    int field_symmetry) {
+  const FrameFieldConeTargets initial =
+      derive_frame_field_cone_targets(mesh, frame_indices, field_symmetry);
+
+  EditableConeTargets editor;
+  editor.field_symmetry = initial.field_symmetry;
+  editor.euler_characteristic = initial.euler_characteristic;
+  editor.required_index_sum = initial.required_index_sum;
+  editor.candidates.reserve(initial.targets.size());
+  for (const FrameFieldConeTarget&amp; target : initial.targets) {
+    editor.candidates.push_back(
+        {target.vertex_index, target.frame_index, target.frame_index, true});
+  }
+  return editor;
+}
+</code></pre>
+</div>
+<h5 id="referenced-by-9">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-6">lit/cone-targets.html, code block 6</a></li>
+</ul>
+</div>
+<h2 id="serialize-and-report-a-snapshot">Serialize and report a
+snapshot</h2>
+<p>The target file uses OBJ’s one-based vertex convention because the
+temporary solver input is normalized to OBJ. Comments preserve the
+prescribed index for inspection without changing the Ricci parser’s
+two-column format.</p>
+<p>The diagnostic report presents the same snapshot at a higher level
+and makes any boundary curvature residual visible before the solver
+starts.</p>
+<div class="omd-code-block">
+<div id="omd-code-13" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-target-output</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">void write_obj_cone_targets(const FrameFieldConeTargets&amp; targets,
+                            std::ostream&amp; output) {
+  output &lt;&lt; &quot;# Generated from Geometry Central frame-field singularities\n&quot;
+         &lt;&lt; &quot;# Format: OBJ vertex_id (1-based) curvature_radians\n&quot;
+         &lt;&lt; &quot;# field symmetry: &quot; &lt;&lt; targets.field_symmetry &lt;&lt; &#x27;\n&#x27;
+         &lt;&lt; &quot;# selected index sum: &quot; &lt;&lt; targets.selected_index_sum &lt;&lt; &#x27;\n&#x27;
+         &lt;&lt; &quot;# required index sum: &quot; &lt;&lt; targets.required_index_sum &lt;&lt; &#x27;\n&#x27;
+         &lt;&lt; std::setprecision(17);
+
+  for (const FrameFieldConeTarget&amp; target : targets.targets) {
+    output &lt;&lt; target.vertex_index + 1 &lt;&lt; &#x27; &#x27; &lt;&lt; target.curvature_radians
+           &lt;&lt; &quot; # prescribed index &quot; &lt;&lt; target.frame_index &lt;&lt; &#x27;\n&#x27;;
+  }
+}
+
+void print_frame_field_cone_targets(const FrameFieldConeTargets&amp; targets,
+                                    std::ostream&amp; output) {
+  output &lt;&lt; &quot;Frame-field Ricci targets:\n&quot;
+         &lt;&lt; &quot;  selected cones: &quot; &lt;&lt; targets.targets.size() &lt;&lt; &#x27;\n&#x27;
+         &lt;&lt; &quot;  selected index sum: &quot; &lt;&lt; targets.selected_index_sum &lt;&lt; &#x27;\n&#x27;
+         &lt;&lt; &quot;  required index sum: &quot; &lt;&lt; targets.required_index_sum &lt;&lt; &#x27;\n&#x27;
+         &lt;&lt; &quot;  Gauss-Bonnet curvature residual: &quot; &lt;&lt; targets.curvature_residual
+         &lt;&lt; &quot; radians\n&quot;;
+
+  if (!targets.satisfies_gauss_bonnet()) {
+    output &lt;&lt; &quot;  note: additive mode will distribute this residual &quot;
+              &quot;over unselected boundary vertices\n&quot;;
+  }
+}
+</code></pre>
+</div>
+<h5 id="referenced-by-10">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-6">lit/cone-targets.html, code block 6</a></li>
+</ul>
+</div>
+<h2 id="executable-examples">Executable examples</h2>
+<p>These small executable examples exercise the mathematical invariants
+and the editing contract without starting the viewer or Ricci solver.
+Their assembly reads as a sequence of scenarios; each scenario is
+explained below.</p>
+<div class="omd-code-block">
+<div id="omd-code-14" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-targets-test</code>
+</h4>
+<ul>
+<li>tangle: <code>tests/cone_targets_test.cpp</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">#include &quot;cone_targets.h&quot;
+
+#include &quot;geometrycentral/surface/manifold_surface_mesh.h&quot;
+
+#include &lt;cmath&gt;
+#include &lt;cstdlib&gt;
+#include &lt;iostream&gt;
+#include &lt;sstream&gt;
+#include &lt;string&gt;
+
+namespace gcs = geometrycentral::surface;
+
+namespace {
+<a class="omd-reference" href="#omd-code-15">@&lt;cone-target-test-support@&gt;</a>
+}
+
+int main() {
+  <a class="omd-reference" href="#omd-code-16">@&lt;cone-target-disk-fixture@&gt;</a>
+
+  <a class="omd-reference" href="#omd-code-17">@&lt;cone-target-residual-example@&gt;</a>
+
+  <a class="omd-reference" href="#omd-code-18">@&lt;cone-target-complete-example@&gt;</a>
+
+  <a class="omd-reference" href="#omd-code-19">@&lt;cone-target-editing-example@&gt;</a>
+
+  return EXIT_SUCCESS;
+}
+</code></pre>
+</div>
+</div>
+<h3 id="lightweight-test-support">Lightweight test support</h3>
+<p>The examples use the same curvature unit as the implementation. A
+deliberately small <code>expect()</code> helper keeps each assertion
+readable while allowing the file to run directly as a CTest
+executable.</p>
+<div class="omd-code-block">
+<div id="omd-code-15" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-target-test-support</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">constexpr double pi = 3.141592653589793238462643383279502884;
+
+void expect(bool condition, const std::string&amp; explanation) {
+  if (!condition) {
+    std::cerr &lt;&lt; &quot;Cone-target example failed: &quot; &lt;&lt; explanation &lt;&lt; &#x27;\n&#x27;;
+    std::exit(EXIT_FAILURE);
+  }
+}
+</code></pre>
+</div>
+<h5 id="referenced-by-11">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-14">lit/cone-targets.html, code block 14</a></li>
+</ul>
+</div>
+<h3 id="a-minimal-disk">A minimal disk</h3>
+<p>One triangle is the smallest manifold triangle mesh with disk
+topology. It has three vertices, three edges, and one face, so <span
+class="math inline"><em>χ</em> = 3 − 3 + 1 = 1</span>. A fourfold field
+therefore has a required index sum of <span
+class="math inline"><em>n</em><em>χ</em> = 4</span>. Initializing every
+vertex to index <span class="math inline"> + 1</span> creates a simple
+synthetic input whose sum is three.</p>
+<div class="omd-code-block">
+<div id="omd-code-16" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-target-disk-fixture</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">gcs::ManifoldSurfaceMesh disk({{0, 1, 2}});
+gcs::VertexData&lt;int&gt; indices(disk, 1);
+</code></pre>
+</div>
+<h5 id="referenced-by-12">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-14">lit/cone-targets.html, code block 14</a></li>
+</ul>
+</div>
+<h3 id="expose-a-residual">Expose a residual</h3>
+<p>The three selected <span class="math inline"> + 1</span> cones
+contribute three index units. The missing unit corresponds to a residual
+of <span class="math inline">2<em>π</em>/4 = <em>π</em>/2</span>, which
+additive mode assigns to unselected boundary vertices. Serialization
+also verifies the conversion to radians and OBJ’s one-based
+indexing.</p>
+<div class="omd-code-block">
+<div id="omd-code-17" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-target-residual-example</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">const FrameFieldConeTargets residual_targets =
+    derive_frame_field_cone_targets(disk, indices, 4);
+expect(residual_targets.targets.size() == 3,
+       &quot;all three nonzero frame indices should become cones&quot;);
+expect(residual_targets.selected_index_sum == 3,
+       &quot;the selected index sum should be three&quot;);
+expect(residual_targets.required_index_sum == 4,
+       &quot;a disk requires four index units for a 4-field&quot;);
+expect(std::abs(residual_targets.curvature_residual - pi / 2.0) &lt; 1e-12,
+       &quot;one missing index unit should leave pi/2 residual&quot;);
+
+std::ostringstream serialized;
+write_obj_cone_targets(residual_targets, serialized);
+expect(serialized.str().find(&quot;1 1.570796&quot;) != std::string::npos,
+       &quot;OBJ targets should be one-based and use pi/2 per index&quot;);
+expect(serialized.str().find(&quot;# prescribed index 1&quot;) != std::string::npos,
+       &quot;the serialized comment should retain the prescribed index&quot;);
+</code></pre>
+</div>
+<h5 id="referenced-by-13">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-14">lit/cone-targets.html, code block 14</a></li>
+</ul>
+</div>
+<h3 id="satisfy-the-complete-budget">Satisfy the complete budget</h3>
+<p>Concentrating all four index units at one synthetic cone makes the
+integer budget exact. This deliberately simple case checks that
+zero-index vertices are omitted and that index <span
+class="math inline"> + 4</span> maps to <span
+class="math inline">2<em>π</em></span> radians.</p>
+<div class="omd-code-block">
+<div id="omd-code-18" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-target-complete-example</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">indices[disk.vertex(0)] = 4;
+indices[disk.vertex(1)] = 0;
+indices[disk.vertex(2)] = 0;
+const FrameFieldConeTargets complete_targets =
+    derive_frame_field_cone_targets(disk, indices, 4);
+expect(complete_targets.satisfies_gauss_bonnet(),
+       &quot;an index sum of four should satisfy disk Gauss-Bonnet&quot;);
+expect(complete_targets.targets.size() == 1,
+       &quot;zero-index vertices should not be serialized&quot;);
+expect(std::abs(complete_targets.targets[0].curvature_radians - 2.0 * pi) &lt;
+           1e-12,
+       &quot;index four should map to curvature 2pi&quot;);
+</code></pre>
+</div>
+<h5 id="referenced-by-14">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-14">lit/cone-targets.html, code block 14</a></li>
+</ul>
+</div>
+<h3 id="preserve-editing-semantics">Preserve editing semantics</h3>
+<p>Restoring the three <span class="math inline"> + 1</span> suggestions
+lets the example vary selection and prescription independently. The
+resulting snapshot must reflect only active prescriptions, while reset
+must recover Geometry Central’s original values.</p>
+<div class="omd-code-block">
+<div id="omd-code-19" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>cone-target-editing-example</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">indices[disk.vertex(0)] = 1;
+indices[disk.vertex(1)] = 1;
+indices[disk.vertex(2)] = 1;
+EditableConeTargets editor = derive_editable_cone_targets(disk, indices, 4);
+expect(editor.active_count() == 3,
+       &quot;all frame-field suggestions should initially be active&quot;);
+
+editor.candidates[0].selected = false;
+editor.candidates[1].prescribed_index = 2;
+const FrameFieldConeTargets edited = editor.active_targets();
+expect(edited.targets.size() == 2,
+       &quot;deselected candidates should not reach the solver snapshot&quot;);
+expect(edited.selected_index_sum == 3,
+       &quot;the active sum should use edited index values&quot;);
+expect(edited.targets[0].frame_index == 2,
+       &quot;the solver snapshot should contain the prescribed index&quot;);
+expect(editor.candidates[1].original_frame_index == 1,
+       &quot;editing must preserve Geometry Central&#x27;s original suggestion&quot;);
+
+editor.deselect_all();
+expect(editor.active_count() == 0,
+       &quot;deselect all should retain candidates but activate none&quot;);
+editor.reset_to_frame_field();
+expect(editor.active_count() == 3,
+       &quot;reset should restore every nonzero frame-field suggestion&quot;);
+expect(editor.candidates[1].prescribed_index == 1,
+       &quot;reset should restore the computed index value&quot;);
+</code></pre>
+</div>
+<h5 id="referenced-by-15">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-14">lit/cone-targets.html, code block 14</a></li>
+</ul>
+</div>
+
+      </main>
+    </body>
+    </html>
+    

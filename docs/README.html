@@ -1,0 +1,367 @@
+<!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>README</title>
+      <style>
+        :root {
+          color-scheme: light dark;
+          --page: #f7f5ef;
+          --panel: #ffffff;
+          --text: #27251f;
+          --muted: #6d685c;
+          --line: #d8d2c4;
+          --accent: #087f5b;
+          --block: #edf5f1;
+          --block-line: #b8d2c6;
+          --code: #e8f0ec;
+          --code-line: #b8d2c6;
+        }
+        @media (prefers-color-scheme: dark) {
+          :root {
+            --page: #171815;
+            --panel: #20221e;
+            --text: #e9e5da;
+            --muted: #aaa394;
+            --line: #3b3e36;
+            --accent: #63e6be;
+            --block: #18251f;
+            --block-line: #365247;
+            --code: #19221e;
+            --code-line: #365247;
+          }
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+          margin: 0;
+          background: var(--page);
+          color: var(--text);
+          font: 17px/1.65 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        main {
+          width: min(100% - 2rem, 980px);
+          margin: 2rem auto 5rem;
+          padding: clamp(1.25rem, 4vw, 3.5rem);
+          background: var(--panel);
+          border: 1px solid var(--line);
+          border-radius: 18px;
+          box-shadow: 0 18px 60px rgb(0 0 0 / 8%);
+        }
+        h1, h2, h3, h4, h5 { line-height: 1.25; scroll-margin-top: 1rem; }
+        .omd-code-block {
+          position: relative;
+          margin: 3.5rem 0;
+          padding: 1.75rem 1.4rem 1.25rem;
+          background: var(--block);
+          border: 1px solid var(--block-line);
+          border-radius: 14px;
+        }
+        .omd-code-anchor {
+          scroll-margin-top: 1rem;
+        }
+        .omd-code-title {
+          position: absolute;
+          top: 0;
+          left: 1.4rem;
+          transform: translateY(-50%);
+          margin: 0;
+          padding: 0.28rem 0.8rem;
+          background: var(--block);
+          border: 1px solid var(--block-line);
+          border-radius: 999px;
+          box-shadow: 0 3px 10px rgb(0 0 0 / 8%);
+          font-size: 1rem;
+          letter-spacing: -0.01em;
+        }
+        .omd-code-title code {
+          padding: 0;
+          color: var(--text);
+          background: transparent;
+        }
+        .omd-code-title.unnamed {
+          color: var(--muted);
+          font-weight: 500;
+        }
+        a { color: var(--accent); text-underline-offset: 0.16em; }
+        pre {
+          overflow-x: auto;
+          padding: 1.1rem 1.25rem;
+          background: var(--code);
+          border: 1px solid var(--code-line);
+          border-radius: 10px;
+          line-height: 1.5;
+        }
+        .omd-code-panel {
+          position: relative;
+          margin: 1.75rem 0 1rem;
+        }
+        .omd-code-panel pre {
+          margin: 0;
+        }
+        .omd-code-panel.has-language pre {
+          padding-top: 1.65rem;
+        }
+        .omd-language-label {
+          position: absolute;
+          top: 0;
+          left: 1rem;
+          z-index: 1;
+          transform: translateY(-50%);
+          padding: 0.2rem 0.65rem;
+          color: var(--text);
+          background: var(--code);
+          border: 1px solid var(--code-line);
+          border-radius: 999px;
+          font: 600 0.82rem/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+        }
+        code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+        :not(pre) > code {
+          padding: 0.12rem 0.35rem;
+          background: var(--code);
+          border-radius: 5px;
+        }
+        pre .omd-reference {
+          padding: 0.08em 0.18em;
+          color: var(--accent);
+          background: color-mix(in srgb, var(--accent) 13%, transparent);
+          border-radius: 4px;
+          font-weight: 700;
+        }
+        blockquote {
+          margin-left: 0;
+          padding-left: 1rem;
+          color: var(--muted);
+          border-left: 4px solid var(--line);
+        }
+        @media (max-width: 640px) {
+          main { width: 100%; margin: 0; border: 0; border-radius: 0; }
+        }
+      </style>
+    </head>
+    <body>
+      <main>
+    <h1 id="geometry-central-surface-viewer">Geometry Central Surface
+Viewer</h1>
+<p>A literate C++17 surface viewer that uses Geometry Central for mesh
+topology, preflight analysis, and frame fields; Polyscope for
+interactive visualization; and Ricci flow for curvature-driven
+flattening.</p>
+<h2 id="requirements">Requirements</h2>
+<ul>
+<li>CMake 3.20 or newer</li>
+<li>A C++17 compiler</li>
+<li>clang-format</li>
+<li><code>omd</code>, the literate-programming tool used to generate
+this project</li>
+<li>OpenGL development libraries</li>
+<li>X11 or Wayland development libraries required by GLFW on Linux</li>
+</ul>
+<p>Geometry Central and Polyscope are fetched automatically when
+installed packages are not found. To use installed packages instead,
+configure with <code>-DGeometryCentral_DIR=&lt;path&gt;</code> and
+<code>-Dpolyscope_DIR=&lt;path&gt;</code>.</p>
+<h2 id="ricci-flow-dependency">Ricci-flow dependency</h2>
+<p>The Ricci-flow solver is maintained in a separate repository and is
+not fetched by CMake. After cloning this viewer, clone the solver into
+the <code>ricci_flow</code> directory expected by
+<code>add_subdirectory()</code>:</p>
+<div class="omd-code-block">
+<div id="omd-code-1" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title unnamed">
+Unnamed code block
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+bash
+</div>
+<pre><code class="language-bash">git clone https://github.com/kendrickshepherd/ricci_flow.git ricci_flow
+</code></pre>
+</div>
+</div>
+<p>The resulting layout should contain
+<code>ricci_flow/CMakeLists.txt</code> alongside this project’s
+top-level <code>CMakeLists.txt</code>.</p>
+<h2 id="generate">Generate</h2>
+<p>The <code>.o.md</code> files are the source of truth. This task
+tangles every generated C++ source, header, and test, then applies the
+repository’s Chromium-based format:</p>
+<div class="omd-code-block">
+<div id="omd-code-2" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>generate</code>
+</h4>
+<ul>
+<li>menu: <code>true</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+omd
+</div>
+<pre><code class="language-omd">tangle
+run format
+</code></pre>
+</div>
+</div>
+<p>Run it after changing a literate section:</p>
+<div class="omd-code-block">
+<div id="omd-code-3" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title unnamed">
+Unnamed code block
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+bash
+</div>
+<pre><code class="language-bash">omd run generate
+</code></pre>
+</div>
+</div>
+<h2 id="build">Build</h2>
+<p>The formatting operation used by <code>generate</code> is also
+available independently:</p>
+<div class="omd-code-block">
+<div id="omd-code-4" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>format</code>
+</h4>
+<ul>
+<li>menu: <code>true</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+bash
+</div>
+<pre><code class="language-bash">find src tests -type f \( -name &#x27;*.cpp&#x27; -o -name &#x27;*.h&#x27; -o -name &#x27;*.hpp&#x27; \) \
+    -exec clang-format -i {} +
+</code></pre>
+</div>
+</div>
+<p>For development and tests, use the Debug preset:</p>
+<div class="omd-code-block">
+<div id="omd-code-5" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>build-debug</code>
+</h4>
+<ul>
+<li>menu: <code>true</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+bash
+</div>
+<pre><code class="language-bash">cmake --preset debug
+cmake --build --preset debug
+ctest --test-dir build/debug --output-on-failure
+</code></pre>
+</div>
+</div>
+<p>The numerical solver is substantially faster with compiler
+optimization. Use the Release preset for interactive flattening:</p>
+<div class="omd-code-block">
+<div id="omd-code-6" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>build</code>
+</h4>
+<ul>
+<li>menu: <code>true</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+bash
+</div>
+<pre><code class="language-bash">cmake --preset release
+cmake --build --preset release
+ctest --test-dir build/release --output-on-failure
+</code></pre>
+</div>
+</div>
+<h2 id="run">Run</h2>
+<p>The default mode runs the complete manifold workflow, including
+preflight, surface analysis, cone selection, and flatten controls:</p>
+<div class="omd-code-block">
+<div id="omd-code-7" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>app</code>
+</h4>
+<ul>
+<li>menu: <code>true</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+bash
+</div>
+<pre><code class="language-bash">./build/release/gc_surface_viewer ricci_flow/data/duck_with_two_holes.obj
+</code></pre>
+</div>
+</div>
+<p>Passing <code>--nonmanifold</code> selects inspection-only mode. It
+uses Geometry Central’s general mesh reader and omits direction fields,
+curvature quantities, cone targets, and flatten controls—even when the
+supplied mesh happens to be manifold:</p>
+<div class="omd-code-block">
+<div id="omd-code-8" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>app-nonmanifold</code>
+</h4>
+<ul>
+<li>menu: <code>true</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+bash
+</div>
+<pre><code class="language-bash">./build/release/gc_surface_viewer --nonmanifold ricci_flow/data/duck_with_two_holes.obj
+</code></pre>
+</div>
+</div>
+<p>To exercise the frame-field-to-Ricci workflow, run the viewer with
+the included triangular bunny that has an open boundary. The viewer
+computes a boundary-aligned fourfold field, converts its nonzero indices
+to cone-curvature targets, and uses those targets when
+<strong>Flatten</strong> is pressed:</p>
+<div class="omd-code-block">
+<div id="omd-code-9" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>ricci-app</code>
+</h4>
+<ul>
+<li>menu: <code>true</code></li>
+</ul>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+bash
+</div>
+<pre><code class="language-bash">./build/release/gc_surface_viewer ricci_flow/data/stanford_bunny_with_hole.obj
+</code></pre>
+</div>
+</div>
+<p>The <strong>Cone singularities</strong> panel lists the frame-field
+candidates. Click a colored marker or its row to focus it, use the
+checkbox to include or exclude it, and edit its integer index directly
+before pressing <strong>Flatten</strong>. The panel reports the active
+index sum and the boundary curvature required by Gauss–Bonnet.</p>
+
+      </main>
+    </body>
+    </html>
+    

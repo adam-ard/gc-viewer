@@ -1,0 +1,439 @@
+<!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>lit/viewer</title>
+      <style>
+        :root {
+          color-scheme: light dark;
+          --page: #f7f5ef;
+          --panel: #ffffff;
+          --text: #27251f;
+          --muted: #6d685c;
+          --line: #d8d2c4;
+          --accent: #087f5b;
+          --block: #edf5f1;
+          --block-line: #b8d2c6;
+          --code: #e8f0ec;
+          --code-line: #b8d2c6;
+        }
+        @media (prefers-color-scheme: dark) {
+          :root {
+            --page: #171815;
+            --panel: #20221e;
+            --text: #e9e5da;
+            --muted: #aaa394;
+            --line: #3b3e36;
+            --accent: #63e6be;
+            --block: #18251f;
+            --block-line: #365247;
+            --code: #19221e;
+            --code-line: #365247;
+          }
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+          margin: 0;
+          background: var(--page);
+          color: var(--text);
+          font: 17px/1.65 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        main {
+          width: min(100% - 2rem, 980px);
+          margin: 2rem auto 5rem;
+          padding: clamp(1.25rem, 4vw, 3.5rem);
+          background: var(--panel);
+          border: 1px solid var(--line);
+          border-radius: 18px;
+          box-shadow: 0 18px 60px rgb(0 0 0 / 8%);
+        }
+        h1, h2, h3, h4, h5 { line-height: 1.25; scroll-margin-top: 1rem; }
+        .omd-code-block {
+          position: relative;
+          margin: 3.5rem 0;
+          padding: 1.75rem 1.4rem 1.25rem;
+          background: var(--block);
+          border: 1px solid var(--block-line);
+          border-radius: 14px;
+        }
+        .omd-code-anchor {
+          scroll-margin-top: 1rem;
+        }
+        .omd-code-title {
+          position: absolute;
+          top: 0;
+          left: 1.4rem;
+          transform: translateY(-50%);
+          margin: 0;
+          padding: 0.28rem 0.8rem;
+          background: var(--block);
+          border: 1px solid var(--block-line);
+          border-radius: 999px;
+          box-shadow: 0 3px 10px rgb(0 0 0 / 8%);
+          font-size: 1rem;
+          letter-spacing: -0.01em;
+        }
+        .omd-code-title code {
+          padding: 0;
+          color: var(--text);
+          background: transparent;
+        }
+        .omd-code-title.unnamed {
+          color: var(--muted);
+          font-weight: 500;
+        }
+        a { color: var(--accent); text-underline-offset: 0.16em; }
+        pre {
+          overflow-x: auto;
+          padding: 1.1rem 1.25rem;
+          background: var(--code);
+          border: 1px solid var(--code-line);
+          border-radius: 10px;
+          line-height: 1.5;
+        }
+        .omd-code-panel {
+          position: relative;
+          margin: 1.75rem 0 1rem;
+        }
+        .omd-code-panel pre {
+          margin: 0;
+        }
+        .omd-code-panel.has-language pre {
+          padding-top: 1.65rem;
+        }
+        .omd-language-label {
+          position: absolute;
+          top: 0;
+          left: 1rem;
+          z-index: 1;
+          transform: translateY(-50%);
+          padding: 0.2rem 0.65rem;
+          color: var(--text);
+          background: var(--code);
+          border: 1px solid var(--code-line);
+          border-radius: 999px;
+          font: 600 0.82rem/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+        }
+        code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+        :not(pre) > code {
+          padding: 0.12rem 0.35rem;
+          background: var(--code);
+          border-radius: 5px;
+        }
+        pre .omd-reference {
+          padding: 0.08em 0.18em;
+          color: var(--accent);
+          background: color-mix(in srgb, var(--accent) 13%, transparent);
+          border-radius: 4px;
+          font-weight: 700;
+        }
+        blockquote {
+          margin-left: 0;
+          padding-left: 1rem;
+          color: var(--muted);
+          border-left: 4px solid var(--line);
+        }
+        @media (max-width: 640px) {
+          main { width: 100%; margin: 0; border: 0; border-radius: 0; }
+        }
+      </style>
+    </head>
+    <body>
+      <main>
+    <h1 id="viewer-lifecycle-and-mesh-setup">Viewer Lifecycle and Mesh
+Setup</h1>
+<p>This section owns the application shell around the geometric
+analysis. It creates the long-lived mesh and geometry objects,
+initializes Polyscope, loads and inspects the requested mesh, registers
+it for display, and finally enters the interactive event loop.</p>
+<h1 id="dependencies">Dependencies</h1>
+<p>Mesh loading uses Geometry Central’s general and manifold-specific
+readers. Polyscope owns the window and registered surface, while the
+flatten and preflight interfaces connect those objects to the rest of
+the application.</p>
+<div class="omd-code-block">
+<div id="omd-code-1" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>viewer-includes</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp"><a class="omd-reference" href="flatten.html#omd-code-1">@&lt;flatten-interface-includes@&gt;</a>
+<a class="omd-reference" href="mesh-preflight.html#omd-code-1">@&lt;mesh-preflight-interface-includes@&gt;</a>
+&quot;geometrycentral/surface/manifold_surface_mesh.h&quot;
+&quot;geometrycentral/surface/meshio.h&quot;
+&quot;geometrycentral/surface/surface_mesh.h&quot;
+&quot;geometrycentral/surface/vertex_position_geometry.h&quot;
+
+&quot;polyscope/polyscope.h&quot;
+&quot;polyscope/surface_mesh.h&quot;
+
+&lt;iostream&gt;
+&lt;memory&gt;
+&lt;tuple&gt;
+&lt;utility&gt;
+</code></pre>
+</div>
+<h5 id="referenced-by">Referenced by</h5>
+<ul>
+<li><a href="main.html#omd-code-2">lit/main.html, code block 2</a></li>
+</ul>
+</div>
+<h1 id="file-local-definitions">File-local definitions</h1>
+<p>The viewer contributes one private helper for the concise mesh
+summary printed immediately after loading.</p>
+<div class="omd-code-block">
+<div id="omd-code-2" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>viewer-defs</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp"><a class="omd-reference" href="#omd-code-10">@&lt;mesh-summary-defs@&gt;</a>
+</code></pre>
+</div>
+<h5 id="referenced-by-1">Referenced by</h5>
+<ul>
+<li><a href="main.html#omd-code-4">lit/main.html, code block 4</a></li>
+</ul>
+</div>
+<h1 id="create-the-long-lived-viewer-state">Create the long-lived viewer
+state</h1>
+<p>The mesh and its geometry share the lifetime of <code>main()</code>.
+Geometry Central returns them as owning pointers, allowing the
+application to select a concrete mesh type at load time while the
+remaining pipeline uses the common <code>SurfaceMesh</code>
+interface.</p>
+<p>Declaration order is significant: local objects are destroyed in
+reverse order, so declaring <code>geometry</code> after
+<code>mesh</code> guarantees that the geometry object is destroyed
+before the mesh it references.</p>
+<div class="omd-code-block">
+<div id="omd-code-3" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>initialize-viewer-state</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">std::unique_ptr&lt;gcs::SurfaceMesh&gt; mesh;
+std::unique_ptr&lt;gcs::VertexPositionGeometry&gt; geometry;
+</code></pre>
+</div>
+<h5 id="referenced-by-2">Referenced by</h5>
+<ul>
+<li><a href="main.html#omd-code-1">lit/main.html, code block 1</a></li>
+</ul>
+</div>
+<h1 id="load-the-mesh">Load the mesh</h1>
+<p>Most downstream algorithms require manifold connectivity, so the
+manifold-specific Geometry Central reader is the default. The general
+reader supports the explicit command-line opt-out used when a mesh only
+needs to be inspected.</p>
+<div class="omd-code-block">
+<div id="omd-code-4" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>load-mesh</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">if (options.require_manifold) {
+  std::unique_ptr&lt;gcs::ManifoldSurfaceMesh&gt; manifold_mesh;
+  std::tie(manifold_mesh, geometry) =
+      gcs::readManifoldSurfaceMesh(options.mesh);
+  mesh = std::move(manifold_mesh);
+} else {
+  std::tie(mesh, geometry) = gcs::readSurfaceMesh(options.mesh);
+}
+</code></pre>
+</div>
+<h5 id="referenced-by-3">Referenced by</h5>
+<ul>
+<li><a href="main.html#omd-code-1">lit/main.html, code block 1</a></li>
+</ul>
+</div>
+<h1 id="inspect-the-loaded-mesh">Inspect the loaded mesh</h1>
+<p>Loading establishes a valid Geometry Central representation; it does
+not imply that the mesh satisfies every Ricci-flow assumption. The
+topology and geometry preflights therefore produce explicit reports
+before more expensive analysis begins. The flatten action later
+recomputes and enforces the same conditions when solver readiness
+becomes mandatory.</p>
+<div class="omd-code-block">
+<div id="omd-code-5" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>inspect-mesh</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">print_mesh_stats(*mesh);
+
+const RicciTopologyPreflight topologyPreflight = analyze_ricci_topology(*mesh);
+print_ricci_topology_preflight(topologyPreflight, std::cout);
+
+const RicciGeometryPreflight geometryPreflight =
+    analyze_ricci_geometry(*mesh, *geometry);
+print_ricci_geometry_preflight(geometryPreflight, std::cout);
+</code></pre>
+</div>
+<h5 id="referenced-by-4">Referenced by</h5>
+<ul>
+<li><a href="main.html#omd-code-1">lit/main.html, code block 1</a></li>
+</ul>
+</div>
+<h1 id="initialize-polyscope">Initialize Polyscope</h1>
+<p>Graphics resources are created only after the mesh has loaded
+successfully and its preflight reports have been printed. Polyscope must
+still be initialized before any display surface is registered.</p>
+<div class="omd-code-block">
+<div id="omd-code-6" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>initialize-polyscope</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">polyscope::options::programName = &quot;Mesh to Spline&quot;;
+polyscope::init();
+</code></pre>
+</div>
+<h5 id="referenced-by-5">Referenced by</h5>
+<ul>
+<li><a href="main.html#omd-code-1">lit/main.html, code block 1</a></li>
+</ul>
+</div>
+<h1 id="register-the-display-surface">Register the display surface</h1>
+<p>Polyscope consumes vertex positions and a face-vertex list. The
+returned pointer is non-owning: Polyscope’s global registry owns the
+display surface. The pipeline retains the pointer because surface
+analysis attaches quantities to this same registered mesh.</p>
+<div class="omd-code-block">
+<div id="omd-code-7" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>register-mesh</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">auto* psMesh = polyscope::registerSurfaceMesh(
+    &quot;mesh&quot;, geometry-&gt;vertexPositions, mesh-&gt;getFaceVertexList());
+</code></pre>
+</div>
+<h5 id="referenced-by-6">Referenced by</h5>
+<ul>
+<li><a href="main.html#omd-code-1">lit/main.html, code block 1</a></li>
+</ul>
+</div>
+<h1 id="configure-flattening">Configure flattening</h1>
+<p>The callback factory converts the frame indices into editable cone
+state before returning. The callback itself retains that state and
+references the long-lived mesh and geometry; it does not retain the
+temporary frame-index object. This allows all manifold analysis
+variables to remain local to the conditional pipeline branch.</p>
+<div class="omd-code-block">
+<div id="omd-code-8" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>configure-flattening</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">polyscope::state::userCallback = make_flatten_callback(
+    options.mesh, *mesh, *geometry, frameIndex, fieldSymmetry);
+</code></pre>
+</div>
+<h5 id="referenced-by-7">Referenced by</h5>
+<ul>
+<li><a href="main.html#omd-code-1">lit/main.html, code block 1</a></li>
+</ul>
+</div>
+<h1 id="enter-the-interactive-viewer">Enter the interactive viewer</h1>
+<p>In manifold mode the registered callback adds the analysis and
+flattening controls. Inspection-only mode leaves the callback unset and
+therefore shows only Polyscope’s standard mesh interface.
+<code>polyscope::show()</code> runs the event loop until the window
+closes.</p>
+<div class="omd-code-block">
+<div id="omd-code-9" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>show-viewer</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">polyscope::show();
+</code></pre>
+</div>
+<h5 id="referenced-by-8">Referenced by</h5>
+<ul>
+<li><a href="main.html#omd-code-1">lit/main.html, code block 1</a></li>
+</ul>
+</div>
+<h1 id="mesh-summary-helper">Mesh summary helper</h1>
+<p>This compact summary records the element counts associated with the
+in-memory Geometry Central mesh. The manifold marker is especially
+useful when the general reader was requested.</p>
+<div class="omd-code-block">
+<div id="omd-code-10" class="omd-code-anchor">
+
+</div>
+<h4 class="omd-code-title">
+<code>mesh-summary-defs</code>
+</h4>
+<div class="omd-code-panel has-language">
+<div class="omd-language-label">
+cpp
+</div>
+<pre><code class="language-cpp">void print_mesh_stats(gcs::SurfaceMesh&amp; mesh) {
+  std::cout &lt;&lt; &quot;Loaded mesh: &quot; &lt;&lt; mesh.nVertices() &lt;&lt; &quot; vertices, &quot;
+            &lt;&lt; mesh.nEdges() &lt;&lt; &quot; edges, &quot; &lt;&lt; mesh.nFaces() &lt;&lt; &quot; faces&quot;;
+  if (!mesh.isManifold()) {
+    std::cout &lt;&lt; &quot; (nonmanifold)&quot;;
+  }
+  std::cout &lt;&lt; &#x27;\n&#x27;;
+}
+</code></pre>
+</div>
+<h5 id="referenced-by-9">Referenced by</h5>
+<ul>
+<li><a href="#omd-code-2">lit/viewer.html, code block 2</a></li>
+</ul>
+</div>
+
+      </main>
+    </body>
+    </html>
+    
