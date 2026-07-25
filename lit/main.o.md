@@ -17,7 +17,7 @@ deduplicating a harmless preprocessor operation.
 @<cone-targets-interface-includes@>
 @<flatten-interface-includes@>
 @<mesh-preflight-interface-includes@>
-@<main-code-includes@>
+@<pipeline-includes@>
 
 <cstdlib>
 <exception>
@@ -38,17 +38,17 @@ their names from colliding with definitions in other translation units.
 ```cpp {name=main tangle=src/main.cpp}
 #include @<main-includes@>
 
-@<main-code-namespace-aliases@>
+@<pipeline-namespace-aliases@>
 
 namespace {
 @<cmdline-defs@>
-@<main-code-defs@>
+@<pipeline-defs@>
 }  // namespace
 
 int main(int argc, char** argv) {
   try {
     @<handle-cmdline@>
-    @<main-code@>
+    @<pipeline-code@>
   } catch (const std::exception& error) {
     std::cerr << "Error: " << error.what() << '\n';
     return EXIT_FAILURE;
