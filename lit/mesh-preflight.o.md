@@ -77,7 +77,7 @@ is a semantic adapter, not a second mesh-topology implementation.  If a future
 Geometry Central revision adds an explicitly boundary-aware genus routine, this
 is the one calculation that should be replaced.
 
-## Public interface
+## Public interface :CARD:
 
 A preflight returns data rather than merely throwing an exception.  The viewer
 can teach the user *why* a mesh was rejected, and future UI work can display
@@ -87,7 +87,7 @@ every failed condition at once.
 "mesh_preflight.h"
 ```
 
-## Header
+## Header :CARD:
 
 The tangled header is an outline of those two layers. Their declarations live
 beside the concepts they express below.
@@ -112,7 +112,7 @@ class VertexPositionGeometry;
 @<geometry-preflight-interface@>
 ```
 
-## Topological report and policy
+## Topological report and policy :CARD:
 
 The topology report records both the invariants and every failed condition.
 `analyze_ricci_topology()` gathers that evidence, `print_ricci_topology_preflight()`
@@ -153,7 +153,7 @@ single tangle block assembles them into the translation unit.
 @<mesh-preflight-geometry-source@>
 ```
 
-## Computing the invariants
+## Computing the invariants  :CARD:
 
 Notice that multiple boundary loops are not an error.  The cut graph is
 responsible for joining them later.  Connectedness and genus are stricter:
@@ -295,7 +295,7 @@ ratios.
 Geometry Central computes the metric quantities. The application only applies
 the policy thresholds.
 
-## Geometric report and policy
+## Geometric report and policy :CARD:
 
 The geometric layer follows the same evidence-first design. Its thresholds
 separate triangles that are unusable from triangles that are merely poor
@@ -342,7 +342,7 @@ void print_ricci_geometry_preflight(const RicciGeometryPreflight& report,
 void require_ricci_geometry(const RicciGeometryPreflight& report);
 ```
 
-## Geometry Source
+## Geometry Source :CARD:
 
 ```cpp {name=mesh-preflight-geometry-source}
 #include "geometrycentral/surface/vertex_position_geometry.h"
@@ -532,7 +532,7 @@ The test program follows the same topological/geometric progression as the
 chapter. Its root shows that progression without burying it in individual
 assertions.
 
-## mesh\_preflight\_test
+## mesh\_preflight\_test :CARD:
 
 ```cpp {name=mesh-preflight-test tangle=tests/mesh_preflight_test.cpp}
 #include "mesh_preflight.h"
@@ -565,7 +565,7 @@ int main() {
 }
 ```
 
-## mesh-preflight-test-support
+## mesh-preflight-test-support :CARD:
 
 The only test-specific machinery is a compact assertion helper and a convenient
 way to construct Geometry Central meshes from face lists.
@@ -584,7 +584,7 @@ gcs::ManifoldSurfaceMesh make_mesh(
 }
 ```
 
-## Topological examples
+## Topological examples :CARD:
 
 Small synthetic meshes make the classification equations concrete. The disk
 and annulus emphasize that multiple boundary loops do not imply positive genus;
@@ -633,7 +633,7 @@ the remaining cases each violate one requirement of the current solver.
          "the current Ricci solver should reject polygonal faces");
 ```
 
-## Scale and triangle quality
+## Scale and triangle quality :CARD:
 
 These examples make the quality metric's normalization visible: an equilateral
 triangle scores one, uniform scaling preserves that score, and a skinny but
@@ -672,7 +672,7 @@ nondegenerate triangle produces a warning rather than a failure.
          "a skinny triangle should produce a quality warning");
 ```
 
-## Invalid geometry
+## Invalid geometry :CARD:
 
 The final examples exercise hard failures: collapsed area, non-finite
 coordinates, and a geometry object paired with a mesh it does not belong to.

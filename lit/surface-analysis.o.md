@@ -5,7 +5,7 @@ the later Ricci-flow workflow. A fourfold direction field proposes cone
 singularities, while Polyscope quantities expose the field, its indices, and
 the mesh's Gaussian curvature for inspection.
 
-# Dependencies
+# Dependencies :CARD:
 
 Geometry Central computes the direction field and singularity indices. The cone
 target interface interprets those indices for Ricci flow.
@@ -16,7 +16,7 @@ target interface interprets those indices for Ricci flow.
 "geometrycentral/surface/direction_fields.h"
 ```
 
-# File-local definitions
+# File-local definitions :CARD:
 
 The only file-local helper expands the raw frame-field indices into a detailed
 diagnostic report. Keeping it behind this aggregate lets `main.o.md` assemble
@@ -26,7 +26,7 @@ private definitions without knowing their implementation categories.
 @<frame-field-diagnostic-defs@>
 ```
 
-# Compute a fourfold direction field
+# Compute a fourfold direction field :CARD:
 
 An $n$-symmetric direction field represents directions modulo rotations of
 $2\pi/n$. Setting $n=4$ produces a cross field suited to quadrilateral layout.
@@ -50,7 +50,7 @@ gcs::VertexData<int> frameIndex =
     gcs::computeVertexIndex(*geometry, field, fieldSymmetry);
 ```
 
-# Attach analysis quantities to Polyscope
+# Attach analysis quantities to Polyscope  :CARD:
 
 Geometry Central expresses the cross field in each face's two-dimensional
 tangent coordinates. Polyscope needs the corresponding three-dimensional basis
@@ -91,7 +91,7 @@ geometry->unrequireFaceTangentBasis();
 geometry->unrequireVertexGaussianCurvatures();
 ```
 
-# Report the field and proposed cones
+# Report the field and proposed cones :CARD:
 
 The first report exposes the raw Geometry Central indices and their locations.
 The second applies the index-to-curvature conversion documented in
@@ -113,7 +113,7 @@ print_frame_field_cone_targets(
     std::cout);
 ```
 
-# Frame-field diagnostics
+# Frame-field diagnostics :CARD:
 
 For each nonzero index, the diagnostic prints both the integer index unit and
 the ordinary fractional index obtained by dividing by the field symmetry. The
