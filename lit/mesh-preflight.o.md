@@ -87,6 +87,8 @@ every failed condition at once.
 "mesh_preflight.h"
 ```
 
+## Header
+
 The tangled header is an outline of those two layers. Their declarations live
 beside the concepts they express below.
 
@@ -110,7 +112,7 @@ class VertexPositionGeometry;
 @<geometry-preflight-interface@>
 ```
 
-### Topological report and policy
+## Topological report and policy
 
 The topology report records both the invariants and every failed condition.
 `analyze_ricci_topology()` gathers that evidence, `print_ricci_topology_preflight()`
@@ -140,6 +142,8 @@ void print_ricci_topology_preflight(const RicciTopologyPreflight& report,
 
 void require_ricci_topology(const RicciTopologyPreflight& report);
 ```
+
+## Split implimentation
 
 The implementation is split into topology and geometry fragments below. A
 single tangle block assembles them into the translation unit.
@@ -338,6 +342,8 @@ void print_ricci_geometry_preflight(const RicciGeometryPreflight& report,
 void require_ricci_geometry(const RicciGeometryPreflight& report);
 ```
 
+## Geometry Source
+
 ```cpp {name=mesh-preflight-geometry-source}
 #include "geometrycentral/surface/vertex_position_geometry.h"
 
@@ -526,6 +532,8 @@ The test program follows the same topological/geometric progression as the
 chapter. Its root shows that progression without burying it in individual
 assertions.
 
+## mesh\_preflight\_test
+
 ```cpp {name=mesh-preflight-test tangle=tests/mesh_preflight_test.cpp}
 #include "mesh_preflight.h"
 
@@ -556,6 +564,8 @@ int main() {
   return EXIT_SUCCESS;
 }
 ```
+
+## mesh-preflight-test-support
 
 The only test-specific machinery is a compact assertion helper and a convenient
 way to construct Geometry Central meshes from face lists.

@@ -6,7 +6,7 @@ geometry algorithms assume manifold connectivity. The `--nonmanifold` option
 relaxes that requirement for cases where merely inspecting a more general mesh
 is useful.
 
-# Dependencies
+# Dependencies :CARD:
 
 This section owns the standard-library facilities used by the command-line
 model, parser, and diagnostics.
@@ -17,7 +17,7 @@ model, parser, and diagnostics.
 <string>
 ```
 
-# Definition aggregate
+# Definition aggregate :CARD:
 
 The executable needs the option model, usage printer, and parser together.
 Collecting them behind one callout keeps those implementation details out of
@@ -29,7 +29,7 @@ the top-level outline in [main.o.md](main.o.md).
 @<cmdline-parser-def@>
 ```
 
-# Option model
+# Option model :CARD:
 
 `Options` is the command-line boundary between parsing and the viewer
 pipeline. The mesh pointer refers to storage in `argv`, which remains valid for
@@ -43,7 +43,7 @@ struct Options {
 };
 ```
 
-# Usage text
+# Usage text :CARD:
 
 Angle brackets in the synopsis mark the mesh as required. Square brackets mark
 the options as optional.
@@ -58,7 +58,7 @@ void print_usage(const char* program) {
 }
 ```
 
-# Parse the arguments
+# Parse the arguments :CARD:
 
 The parser examines arguments from left to right. Recognized options update the
 model; the first other argument becomes the mesh path. A second such argument
@@ -90,7 +90,7 @@ Options parse_options(int argc, char** argv) {
 }
 ```
 
-# Connect parsing to `main()`
+# Connect parsing to `main()` :CARD:
 
 This chunk expands inside `main()`. It establishes the required-mesh invariant
 before the viewer pipeline begins, allowing later sections to use

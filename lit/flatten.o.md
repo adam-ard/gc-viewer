@@ -4,11 +4,19 @@ The flatten module owns the interactive Ricci-flow workflow. Its public header
 exposes one callback factory; process management, validation, output placement,
 and UI state remain private to the implementation.
 
-# Public Interface
+# Public Interface :CARD:
+
+The returned callback owns the input path and its private UI state. It borrows
+the mesh and geometry because the viewer owns them for the entire Polyscope
+session. The frame indices are needed only while constructing the initial cone
+editor, so the factory accepts them as a read-only reference and does not
+capture them.
 
 ```cpp {name=flatten-interface-includes}
 "flatten.h"
 ```
+
+# Public Interface Code :CARD:
 
 ```cpp {name=flatten-header tangle=src/flatten.h}
 #pragma once
@@ -26,11 +34,11 @@ std::function<void()> make_flatten_callback(
     std::string input_path,
     geometrycentral::surface::SurfaceMesh& mesh,
     geometrycentral::surface::VertexPositionGeometry& geometry,
-    geometrycentral::surface::VertexData<int>& frame_indices,
+    const geometrycentral::surface::VertexData<int>& frame_indices,
     int field_symmetry);
 ```
 
-# Implementation Includes
+# Implementation Includes :CARD:
 
 ```cpp {name=flatten-implementation-includes}
 "cone_targets.h"
@@ -62,7 +70,56 @@ std::function<void()> make_flatten_callback(
 <vector>
 ```
 
-# Ricci Command
+# Implementation Outline :CARD:
+
+The generated translation unit reads as a map of the workflow. Private
+definitions first bridge to the solver, place its output, validate the input,
+and support the editor. The public factory then creates the persistent state
+and returns the per-frame callback.
+
+Within that callback, controls are drawn before a requested job is launched.
+Each later frame polls for completion without blocking the UI, then presents
+the latest status.
+
+```cpp {name=flatten-source tangle=src/flatten.cpp}
+#include @<flatten-implementation-includes@>
+
+namespace gc = geometrycentral;
+namespace gcs = geometrycentral::surface;
+
+namespace {
+@<ricci-command-definitions@>
+
+@<mesh-placement-definitions@>
+
+@<flatten-validation-definitions@>
+
+@<flatten-state-definition@>
+
+@<cone-editor-definitions@>
+}  // namespace
+
+std::function<void()> make_flatten_callback(
+    std::string input_path,
+    gcs::SurfaceMesh& mesh,
+    gcs::VertexPositionGeometry& geometry,
+    const gcs::VertexData<int>& frame_indices,
+    int field_symmetry) {
+  @<initialize-flatten-state@>
+
+  return [state, input_path = std::move(input_path), &mesh, &geometry]() {
+    @<draw-flatten-controls@>
+
+    @<launch-flatten-job@>
+
+    @<collect-flatten-job@>
+
+    @<draw-flatten-status@>
+  };
+}
+```
+
+# Ricci Command :CARD:
 
 The command-line bridge uses an OBJ written from Geometry Central's in-memory
 mesh rather than reopening the user's original file. This normalization makes
@@ -71,7 +128,7 @@ its dense enumeration is exactly the enumeration written to the temporary OBJ.
 When the Ricci solver becomes a library this pair of temporary files can be
 replaced by in-memory data without changing the cone-selection model.
 
-```cpp {name=flatten-definitions}
+```cpp {name=ricci-command-definitions}
 std::string shell_quote(const std::string& value) {
   std::string quoted = "'";
   for (char character : value) {
@@ -158,9 +215,20 @@ struct RicciJob {
 };
 ```
 
-# Mesh Placement
+# Mesh Placement :CARD:
 
-```cpp {name=flatten-definitions}
+Ricci flow determines a planar metric, not a useful viewer pose. The flattened
+OBJ may therefore arrive at an arbitrary scale and location. Axis-aligned
+bounds provide a simple display transform: center the result, scale its largest
+dimension to half the original mesh's extent, and translate it just beyond the
+original mesh's positive-$x$ side.
+
+This uniform scale and translation do not change angles or relative lengths, so
+they preserve the geometry we want to inspect. Clamping the measured extent
+away from zero also prevents a collapsed output from causing division by zero
+during display placement.
+
+```cpp {name=mesh-placement-definitions}
 struct MeshBounds {
   gc::Vector3 min = gc::Vector3::infinity();
   gc::Vector3 max = -gc::Vector3::infinity();
@@ -211,19 +279,33 @@ void place_flattened_mesh_beside_original(
 }
 ```
 
-# Input Validation
+# Input Validation :CARD:
 
 The topology preflight is shared with the viewer's load-time report. Repeating
 the inexpensive analysis when the button is pressed keeps the flattening
 boundary honest if later viewer tools are allowed to modify mesh connectivity.
 
-```cpp {name=flatten-definitions}
+```cpp {name=flatten-validation-definitions}
 void validate_ricci_input(gcs::SurfaceMesh& mesh,
                           gcs::VertexPositionGeometry& geometry) {
   require_ricci_topology(analyze_ricci_topology(mesh));
   require_ricci_geometry(analyze_ricci_geometry(mesh, geometry));
 }
+```
 
+# Persistent UI State :CARD:
+
+Polyscope invokes the callback once per frame, so state that survives between
+frames must live outside the callback body. `FlattenState` owns the editable
+cone prescription and asynchronous job. Its Polyscope pointers are borrowed:
+Polyscope owns the registered point cloud and color quantity.
+
+The focused candidate is the current UI selection. `colored_candidate` records
+which focus was used for the last color update, while the dirty flag records
+edits to selection or prescribed index. Together they avoid rebuilding marker
+colors on every frame.
+
+```cpp {name=flatten-state-definition}
 struct FlattenState {
   std::string status;
   RicciJob job;
@@ -236,7 +318,7 @@ struct FlattenState {
 };
 ```
 
-# Cone Editor
+# Cone Editor :CARD:
 
 The frame field remains visible as the computed proposal, while this editor
 stores an independent Ricci prescription. Every nonzero frame-field
@@ -250,7 +332,7 @@ camera click from silently changing a target. Editing is disabled while a
 solver process is running, and the process receives an immutable
 `active_targets()` snapshot.
 
-```cpp {name=flatten-definitions}
+```cpp {name=cone-editor-definitions}
 std::vector<glm::vec3> candidate_colors(const EditableConeTargets& editor,
                                         std::size_t focused_candidate) {
   std::vector<glm::vec3> colors;
@@ -373,9 +455,52 @@ void draw_cone_editor(FlattenState& state) {
 }
 ```
 
-# Callback Body
+# Constructing the Editor :CARD:
 
-```cpp {name=flatten-callback-body}
+Construction converts the frame field into an editable snapshot and registers
+one marker per candidate. Candidate targets use dense vertex indices, so the
+inverse table maps those serialized indices back to Geometry Central vertex
+handles when locating the markers.
+
+```cpp {name=initialize-flatten-state}
+auto state = std::make_shared<FlattenState>();
+state->editor =
+    derive_editable_cone_targets(mesh, frame_indices, field_symmetry);
+
+std::vector<gc::Vector3> candidate_positions;
+candidate_positions.reserve(state->editor.candidates.size());
+const gcs::VertexData<std::size_t> dense_indices = mesh.getVertexIndices();
+std::vector<gcs::Vertex> vertices_by_index(mesh.nVertices());
+for (gcs::Vertex vertex : mesh.vertices()) {
+  vertices_by_index[dense_indices[vertex]] = vertex;
+}
+for (const EditableConeTarget& candidate : state->editor.candidates) {
+  candidate_positions.push_back(
+      geometry.vertexPositions[vertices_by_index[candidate.vertex_index]]);
+}
+
+if (!candidate_positions.empty()) {
+  state->candidate_cloud =
+      polyscope::registerPointCloud("cone candidates", candidate_positions);
+  state->candidate_cloud->setPointRadius(0.012);
+  state->candidate_colors = state->candidate_cloud->addColorQuantity(
+      "prescribed cone state",
+      candidate_colors(state->editor, state->focused_candidate));
+  state->candidate_colors->setEnabled(true);
+  state->candidate_colors_dirty = false;
+  state->colored_candidate = state->focused_candidate;
+}
+```
+
+# Per-Frame Callback
+
+## Draw the controls :CARD:
+
+Selection is read before colors are refreshed, so a newly picked marker is
+highlighted during the same frame. The Flatten button is disabled for the
+lifetime of an outstanding future.
+
+```cpp {name=draw-flatten-controls}
 follow_polyscope_candidate_selection(*state);
 refresh_candidate_colors(*state);
 draw_cone_editor(*state);
@@ -383,7 +508,15 @@ draw_cone_editor(*state);
 ImGui::BeginDisabled(state->job.running());
 const bool flatten_requested = ImGui::Button("Flatten");
 ImGui::EndDisabled();
+```
 
+## Launch a requested job :CARD:
+
+Pressing Flatten revalidates the current mesh, freezes the editor into an
+immutable target snapshot, writes the bridge files, and starts the solver.
+Exceptions become visible status instead of escaping through the UI callback.
+
+```cpp {name=launch-flatten-job}
 if (flatten_requested) {
   try {
     validate_ricci_input(mesh, geometry);
@@ -404,7 +537,15 @@ if (flatten_requested) {
     state->status = std::string("Flatten failed: ") + error.what();
   }
 }
+```
 
+## Collect a completed job :CARD:
+
+Polling `ready()` is nonblocking. Once the solver completes successfully, its
+OBJ is loaded through Geometry Central, transformed for side-by-side display,
+and then registered with Polyscope.
+
+```cpp {name=collect-flatten-job}
 if (state->job.ready()) {
   try {
     const int exit_status = state->job.finish();
@@ -439,60 +580,12 @@ if (state->job.ready()) {
     state->status = std::string("Flatten failed: ") + error.what();
   }
 }
-
-if (!state->status.empty()) {
-  ImGui::TextWrapped("%s", state->status.c_str());
-}
 ```
 
-# Implementation File
+## Present status :CARD:
 
-```cpp {name=flatten-source tangle=src/flatten.cpp}
-#include @<flatten-implementation-includes@>
-
-namespace gc = geometrycentral;
-namespace gcs = geometrycentral::surface;
-
-namespace {
-@<flatten-definitions@>
-}
-
-std::function<void()> make_flatten_callback(
-    std::string input_path,
-    gcs::SurfaceMesh& mesh,
-    gcs::VertexPositionGeometry& geometry,
-    gcs::VertexData<int>& frame_indices,
-    int field_symmetry) {
-  auto state = std::make_shared<FlattenState>();
-  state->editor =
-      derive_editable_cone_targets(mesh, frame_indices, field_symmetry);
-
-  std::vector<gc::Vector3> candidate_positions;
-  candidate_positions.reserve(state->editor.candidates.size());
-  const gcs::VertexData<std::size_t> dense_indices = mesh.getVertexIndices();
-  std::vector<gcs::Vertex> vertices_by_index(mesh.nVertices());
-  for (gcs::Vertex vertex : mesh.vertices()) {
-    vertices_by_index[dense_indices[vertex]] = vertex;
-  }
-  for (const EditableConeTarget& candidate : state->editor.candidates) {
-    candidate_positions.push_back(
-        geometry.vertexPositions[vertices_by_index[candidate.vertex_index]]);
-  }
-
-  if (!candidate_positions.empty()) {
-    state->candidate_cloud =
-        polyscope::registerPointCloud("cone candidates", candidate_positions);
-    state->candidate_cloud->setPointRadius(0.012);
-    state->candidate_colors = state->candidate_cloud->addColorQuantity(
-        "prescribed cone state",
-        candidate_colors(state->editor, state->focused_candidate));
-    state->candidate_colors->setEnabled(true);
-    state->candidate_colors_dirty = false;
-    state->colored_candidate = state->focused_candidate;
-  }
-
-  return [state, input_path = std::move(input_path), &mesh, &geometry]() {
-    @<flatten-callback-body@>
-  };
+```cpp {name=draw-flatten-status}
+if (!state->status.empty()) {
+  ImGui::TextWrapped("%s", state->status.c_str());
 }
 ```

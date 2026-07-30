@@ -30,7 +30,8 @@ git clone https://github.com/kendrickshepherd/ricci_flow.git ricci_flow
 The resulting layout should contain `ricci_flow/CMakeLists.txt` alongside this
 project's top-level `CMakeLists.txt`.
 
-## Generate
+
+## Generate :CARD:
 
 The `.o.md` files are the source of truth. This task tangles every generated
 C++ source, header, and test, then applies the repository's Chromium-based
@@ -47,7 +48,13 @@ Run it after changing a literate section:
 omd run generate
 ```
 
-## Build
+## Test Hello :CARD:
+
+```bash {name=test-hello menu=true}
+echo hello
+```
+
+## Format :CARD:
 
 The formatting operation used by `generate` is also available independently:
 
@@ -56,6 +63,8 @@ find src tests -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) \
     -exec clang-format -i {} +
 ```
 
+## Build Debug :CARD:
+
 For development and tests, use the Debug preset:
 
 ```bash {name=build-debug menu=true}
@@ -63,6 +72,8 @@ cmake --preset debug
 cmake --build --preset debug
 ctest --test-dir build/debug --output-on-failure
 ```
+
+## Build Release :CARD:
 
 The numerical solver is substantially faster with compiler optimization. Use
 the Release preset for interactive flattening:
@@ -73,7 +84,7 @@ cmake --build --preset release
 ctest --test-dir build/release --output-on-failure
 ```
 
-## Run
+## Run :CARD:
 
 The default mode runs the complete manifold workflow, including preflight,
 surface analysis, cone selection, and flatten controls:
@@ -81,6 +92,8 @@ surface analysis, cone selection, and flatten controls:
 ```bash {name=app menu=true}
 ./build/release/gc_surface_viewer ricci_flow/data/duck_with_two_holes.obj
 ```
+
+## Run Non Manifold :CARD:
 
 Passing `--nonmanifold` selects inspection-only mode. It uses Geometry
 Central's general mesh reader and omits direction fields, curvature quantities,
@@ -91,6 +104,8 @@ manifold:
 ./build/release/gc_surface_viewer --nonmanifold ricci_flow/data/duck_with_two_holes.obj
 ```
 
+## Run, standford bunny with holes :CARD:
+
 To exercise the frame-field-to-Ricci workflow, run the viewer with the included
 triangular bunny that has an open boundary. The viewer computes a
 boundary-aligned fourfold field, converts its nonzero indices to cone-curvature
@@ -100,8 +115,11 @@ targets, and uses those targets when **Flatten** is pressed:
 ./build/release/gc_surface_viewer ricci_flow/data/stanford_bunny_with_hole.obj
 ```
 
+## Cone Singularites 
+
 The **Cone singularities** panel lists the frame-field candidates. Click a
 colored marker or its row to focus it, use the checkbox to include or exclude
 it, and edit its integer index directly before pressing **Flatten**. The panel
 reports the active index sum and the boundary curvature required by
 Gauss--Bonnet.
+

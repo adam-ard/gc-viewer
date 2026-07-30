@@ -6,7 +6,7 @@ explain them; the only implementation logic kept here is the process boundary:
 parse the command line, run the viewer, and translate exceptions into a
 nonzero exit status.
 
-# Viewer Pipeline
+# Viewer Pipeline :CARD:
 
 After command-line validation, the viewer lifecycle owns mesh and window setup,
 while surface analysis owns the geometric quantities derived from that mesh.
@@ -41,7 +41,7 @@ if (options.require_manifold) {
 @<show-viewer@>
 ```
 
-# Includes
+# Includes :CARD:
 
 Each contributing section owns the headers required by its code. Repeated
 headers are intentional: local dependency ownership is more useful here than
@@ -57,7 +57,7 @@ deduplicating a harmless preprocessor operation.
 <iostream>
 ```
 
-# Namespace Aliases
+# Namespace Aliases :CARD:
 
 These aliases apply to the entire generated `main.cpp` translation unit. They
 keep Geometry Central's mathematical and surface-mesh types readable throughout
@@ -69,7 +69,7 @@ namespace gc = geometrycentral;
 namespace gcs = geometrycentral::surface;
 ```
 
-# File-local Definitions
+# File-local Definitions :CARD:
 
 Each contributing section owns its private diagnostic helpers. This aggregate
 keeps their details in the files that explain them while giving the executable
@@ -81,7 +81,7 @@ assembly a single definition callout.
 @<viewer-defs@>
 ```
 
-# Main File
+# Main File :CARD:
 
 Expected command-line mistakes are still reported locally by the parser.
 Placing that work inside the outer `try` also ensures that any unexpected

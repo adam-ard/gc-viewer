@@ -52,7 +52,7 @@ continuation solver an easier problem, although a large-magnitude cone can
 itself be difficult, so the editor exposes both quantities rather than
 promising that cone count alone predicts convergence.
 
-## Public representation
+## Public representation :CARD:
 
 The dense vertex index is important. Geometry Central may remove unused input
 vertices while loading, and mesh mutation can make raw handle indices sparse.
@@ -66,7 +66,7 @@ remain private to the generated source file.
 "cone_targets.h"
 ```
 
-# Public header assembly
+## Public header assembly :CARD:
 
 The public header combines two representations and the operations that create,
 serialize, and report them. Keeping this assembly shallow makes the generated
@@ -90,7 +90,7 @@ next to its definition.
 @<cone-target-operations@>
 ```
 
-## Immutable solver snapshot
+## Immutable solver snapshot :CARD:
 
 `FrameFieldConeTarget` is one prescribed cone in solver-ready form: a dense
 zero-based vertex index, an integer index prescription, and the corresponding
@@ -122,7 +122,7 @@ struct FrameFieldConeTargets {
 };
 ```
 
-## Editable candidate set
+## Editable candidate set :CARD:
 
 The editor retains Geometry Central's original suggestion independently from
 the current prescription. Selection is a third, orthogonal state: deselecting a
@@ -152,7 +152,7 @@ struct EditableConeTargets {
 };
 ```
 
-## Public operations
+## Public operations :CARD:
 
 The two derivation functions offer either an immediate snapshot or an editable
 candidate set from the same Geometry Central field indices. Serialization
@@ -177,7 +177,7 @@ void print_frame_field_cone_targets(const FrameFieldConeTargets& targets,
                                     std::ostream& output);
 ```
 
-## Implementation assembly
+## Implementation assembly :CARD:
 
 The implementation follows the transformation from discrete field indices to
 solver input. Private utilities establish the curvature unit and assemble
@@ -205,7 +205,7 @@ namespace gcs = geometrycentral::surface;
 @<cone-target-output@>
 ```
 
-## Private implementation boundary
+## Private implementation boundary :CARD:
 
 The anonymous namespace gives its contents internal linkage: these names are
 visible throughout `cone_targets.cpp` but cannot collide with names in another
@@ -222,7 +222,7 @@ namespace {
 }  // namespace
 ```
 
-## Curvature unit
+## Curvature unit :CARD:
 
 The conversion from index units to radians requires $\pi$. Keeping the
 constant inside the private implementation boundary makes it an implementation
@@ -232,7 +232,7 @@ detail rather than part of the public cone-target interface.
 constexpr double pi = 3.141592653589793238462643383279502884;
 ```
 
-## Check the topological budget
+## Check the topological budget :CARD:
 
 Gauss--Bonnet satisfaction is checked in exact integer index units. The
 equivalent curvature values are floating-point quantities and are retained for
@@ -244,7 +244,7 @@ bool FrameFieldConeTargets::satisfies_gauss_bonnet() const {
 }
 ```
 
-## Freeze active candidates
+## Freeze active candidates :CARD:
 
 Each selected, nonzero prescription contributes $2\pi/n$ radians per index
 unit. The private collector calculates both the selected cone curvature and the
@@ -289,7 +289,7 @@ FrameFieldConeTargets collect_active_targets(
 }
 ```
 
-## Edit without losing the frame-field suggestion
+## Edit without losing the frame-field suggestion :CARD:
 
 The editable representation deliberately separates two ideas:
 
@@ -333,7 +333,7 @@ void EditableConeTargets::deselect_all() {
 }
 ```
 
-## Derive candidates from Geometry Central
+## Derive candidates from Geometry Central :CARD:
 
 The frame indices and output vertex identifiers must refer to the same mesh.
 Geometry Central's `VertexData` retains its owning mesh, allowing this
@@ -408,7 +408,7 @@ EditableConeTargets derive_editable_cone_targets(
 }
 ```
 
-## Serialize and report a snapshot
+## Serialize and report a snapshot :CARD:
 
 The target file uses OBJ's one-based vertex convention because the temporary
 solver input is normalized to OBJ. Comments preserve the prescribed index for
@@ -449,7 +449,7 @@ void print_frame_field_cone_targets(const FrameFieldConeTargets& targets,
 }
 ```
 
-## Executable examples
+## Executable examples :CARD:
 
 These small executable examples exercise the mathematical invariants and the
 editing contract without starting the viewer or Ricci solver. Their assembly
@@ -485,7 +485,7 @@ int main() {
 }
 ```
 
-### Lightweight test support
+## Lightweight test support  :CARD:
 
 The examples use the same curvature unit as the implementation. A deliberately
 small `expect()` helper keeps each assertion readable while allowing the file
@@ -502,7 +502,7 @@ void expect(bool condition, const std::string& explanation) {
 }
 ```
 
-### A minimal disk
+## A minimal disk  :CARD:
 
 One triangle is the smallest manifold triangle mesh with disk topology. It has
 three vertices, three edges, and one face, so
@@ -515,7 +515,7 @@ gcs::ManifoldSurfaceMesh disk({{0, 1, 2}});
 gcs::VertexData<int> indices(disk, 1);
 ```
 
-### Expose a residual
+## Expose a residual  :CARD:
 
 The three selected $+1$ cones contribute three index units. The missing unit
 corresponds to a residual of $2\pi/4=\pi/2$, which additive mode assigns to
@@ -542,7 +542,7 @@ expect(serialized.str().find("# prescribed index 1") != std::string::npos,
        "the serialized comment should retain the prescribed index");
 ```
 
-### Satisfy the complete budget
+## Satisfy the complete budget  :CARD:
 
 Concentrating all four index units at one synthetic cone makes the integer
 budget exact. This deliberately simple case checks that zero-index vertices are
@@ -563,7 +563,7 @@ expect(std::abs(complete_targets.targets[0].curvature_radians - 2.0 * pi) <
        "index four should map to curvature 2pi");
 ```
 
-### Preserve editing semantics
+## Preserve editing semantics  :CARD:
 
 Restoring the three $+1$ suggestions lets the example vary selection and
 prescription independently. The resulting snapshot must reflect only active
